@@ -1,0 +1,25 @@
+# Bolão Copa 2026 — Task Tracker
+
+- `[/]` Setup do projeto (Vite + React + TailwindCSS)
+- `[ ]` Instalar dependências (supabase-js, react-router-dom)
+- `[ ]` Configurar TailwindCSS v4
+- `[ ]` Criar `src/lib/supabase.js`
+- `[ ]` Criar `src/lib/auth.js` (Context)
+- `[ ]` Criar `src/lib/scoring.js`
+- `[ ]` Criar `src/components/Layout.jsx`
+- `[ ]` Criar `src/components/GroupTabs.jsx`
+- `[ ]` Criar `src/components/MatchCard.jsx`
+- `[ ]` Criar `src/components/RankingTable.jsx`
+- `[ ]` Criar `src/components/StatsPanel.jsx`
+- `[ ]` Criar `src/components/ProtectedRoute.jsx`
+- `[ ]` Criar `src/pages/LoginPage.jsx`
+- `[ ]` Criar `src/pages/PredictionsPage.jsx`
+- `[ ]` Criar `src/pages/RankingPage.jsx`
+- `[ ]` Criar `src/pages/StatsPage.jsx`
+- `[ ]` Criar `src/pages/AdminPage.jsx`
+- `[ ]` Criar `src/App.jsx` (Router)
+- `[ ]` Criar `src/main.jsx`
+- `[ ]` Criar `src/index.css`
+- `[ ]` Criar `public/_redirects`
+- `[ ]` Criar SQL schema file (referência)
+- `[ ]` Build e verificação

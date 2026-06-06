@@ -1,0 +1,176 @@
+import { useState, useEffect, useRef } from 'react'
+import { calcScore } from '../lib/scoring'
+
+export default function MatchCard({ match, prediction, onSave, saving, saved, liveData }) {
+  const [homeScore, setHomeScore] = useState('')
+  const [awayScore, setAwayScore] = useState('')
+  const debounceRef = useRef(null)
+
+  // Check if match has started
+  const hasStarted = (match.match_date && new Date(match.match_date) < new Date()) || !!liveData
+  const hasResult = match.score_home !== null && match.score_away !== null
+
+  // Initialize from prediction
+  useEffect(() => {
+    if (prediction) {
+      setHomeScore(prediction.score_home?.toString() ?? '')
+      setAwayScore(prediction.score_away?.toString() ?? '')
+    }
+  }, [prediction])
+
+  // Auto-save with debounce
+  const triggerSave = (home, away) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      if (home !== '' && away !== '') {
+        onSave(match.id, parseInt(home), parseInt(away))
+      }
+    }, 800)
+  }
+
+  const handleHomeChange = (e) => {
+    const val = e.target.value
+    if (val === '' || (parseInt(val) >= 0 && parseInt(val) <= 20)) {
+      setHomeScore(val)
+      triggerSave(val, awayScore)
+    }
+  }
+
+  const handleAwayChange = (e) => {
+    const val = e.target.value
+    if (val === '' || (parseInt(val) >= 0 && parseInt(val) <= 20)) {
+      setAwayScore(val)
+      triggerSave(homeScore, val)
+    }
+  }
+
+  // Calculate points if there's a result
+  const scoreResult = hasResult && prediction
+    ? calcScore(
+        { score_home: prediction.score_home, score_away: prediction.score_away },
+        { score_home: match.score_home, score_away: match.score_away }
+      )
+    : null
+
+  // Format match date
+  const formatDate = (dateStr) => {
+    if (!dateStr) return ''
+    const d = new Date(dateStr)
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+  }
+
+  return (
+    <div className={`glass-card p-4 md:p-5 transition-all duration-300 ${
+      hasResult ? 'border-accent-green/20' : ''
+    } ${saved ? 'ring-2 ring-accent-green/40' : ''}`}>
+      {/* Date row */}
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs text-text-muted">{formatDate(match.match_date)}</span>
+        <div className="flex items-center gap-2">
+          {saving && (
+            <span className="flex items-center gap-1 text-xs text-accent-gold">
+              <span className="w-3 h-3 border-2 border-accent-gold border-t-transparent rounded-full animate-spin" />
+              Salvando...
+            </span>
+          )}
+          {saved && (
+            <span className="text-xs text-accent-green animate-scale-in">✅ Salvo!</span>
+          )}
+          {hasStarted && !hasResult && !liveData && (
+            <span className="text-xs text-accent-gold bg-accent-gold/10 px-2 py-0.5 rounded-full">🔒 Bloqueado</span>
+          )}
+        </div>
+      </div>
+
+      {/* Main match row */}
+      <div className="flex items-center gap-3 md:gap-4">
+        {/* Home Team */}
+        <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+          <span className="font-semibold text-sm md:text-base text-text-primary truncate text-right">
+            {match.team_home}
+          </span>
+          {match.flag_home?.startsWith('http') ? (
+            <img src={match.flag_home} alt={match.team_home} className="w-8 h-5 md:w-10 md:h-7 object-cover rounded shadow-sm flex-shrink-0" />
+          ) : (
+            <span className="text-2xl md:text-3xl flex-shrink-0">{match.flag_home}</span>
+          )}
+        </div>
+
+        {/* Score Inputs */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <input
+            type="number"
+            min="0"
+            max="20"
+            value={homeScore}
+            onChange={handleHomeChange}
+            disabled={hasStarted}
+            className={hasStarted ? 'score-input-locked' : 'score-input'}
+            placeholder="–"
+          />
+          <span className="text-text-muted font-bold text-lg">×</span>
+          <input
+            type="number"
+            min="0"
+            max="20"
+            value={awayScore}
+            onChange={handleAwayChange}
+            disabled={hasStarted}
+            className={hasStarted ? 'score-input-locked' : 'score-input'}
+            placeholder="–"
+          />
+        </div>
+
+        {/* Away Team */}
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {match.flag_away?.startsWith('http') ? (
+            <img src={match.flag_away} alt={match.team_away} className="w-8 h-5 md:w-10 md:h-7 object-cover rounded shadow-sm flex-shrink-0" />
+          ) : (
+            <span className="text-2xl md:text-3xl flex-shrink-0">{match.flag_away}</span>
+          )}
+          <span className="font-semibold text-sm md:text-base text-text-primary truncate">
+            {match.team_away}
+          </span>
+        </div>
+      </div>
+
+      {/* Result + Points row (shown when match has real result) */}
+      {hasResult && (
+        <div className="mt-3 pt-3 border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-text-muted">Resultado:</span>
+            <span className="text-sm font-bold text-accent-green-light">
+              {match.score_home} × {match.score_away}
+            </span>
+            {liveData && !liveData.finished && (
+              <span className="text-xs font-bold text-red-500 animate-pulse ml-2">
+                🔴 Ao Vivo {liveData.time_elapsed ? `(${liveData.time_elapsed}')` : ''}
+              </span>
+            )}
+            {liveData && liveData.finished && (
+              <span className="text-xs font-bold text-text-muted ml-2">
+                (Finalizado)
+              </span>
+            )}
+          </div>
+          {scoreResult && (
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-text-muted">{scoreResult.details}</span>
+              <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                scoreResult.total === 5
+                  ? 'bg-gradient-to-r from-accent-gold to-amber-600 text-white'
+                  : scoreResult.total >= 3
+                  ? 'bg-accent-green/20 text-accent-green-light'
+                  : scoreResult.total > 0
+                  ? 'bg-accent-gold/20 text-accent-gold-light'
+                  : 'bg-bg-primary text-text-muted'
+              }`}>
+                +{scoreResult.total} pts
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
