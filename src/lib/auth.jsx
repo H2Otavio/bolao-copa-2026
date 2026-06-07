@@ -1,8 +1,16 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from './supabase'
-import bcrypt from 'bcryptjs'
 
 const AuthContext = createContext(null)
+
+// Função nativa do navegador para criar Hash (SHA-256) segura sem depender de bibliotecas externas
+async function hashPassword(password) {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(password)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -59,9 +67,8 @@ export function AuthProvider({ children }) {
       throw new Error('Código do grupo não encontrado.')
     }
 
-    // Cria a Hash da senha
-    const salt = bcrypt.genSaltSync(10)
-    const hash = bcrypt.hashSync(password, salt)
+    // Cria a Hash da senha usando a API nativa
+    const hash = await hashPassword(password)
 
     // Insere o usuário
     let { data: userData, error: createError } = await supabase
@@ -95,8 +102,8 @@ export function AuthProvider({ children }) {
     }
 
     // Verifica a senha
-    const isValid = bcrypt.compareSync(password, userData.password)
-    if (!isValid) {
+    const hash = await hashPassword(password)
+    if (hash !== userData.password) {
       throw new Error('Senha incorreta.')
     }
 
