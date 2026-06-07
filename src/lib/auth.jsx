@@ -150,7 +150,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{ 
-      user, league, loading, login, logout, 
+      user, league, loading, login, register, logout, 
       adminUser, adminLogin, adminLogout 
     }}>
       {children}
