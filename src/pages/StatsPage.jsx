@@ -5,7 +5,7 @@ import GroupTabs from '../components/GroupTabs'
 import { useLiveScores } from '../lib/api'
 import { translateTeam } from '../lib/countries'
 
-const CUP_GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L', 'R32', 'R16', 'QF', 'SF', '3RD', 'FINAL']
+const CUP_GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', '16avos', 'Oitavas', 'Quartas', 'Semi-final', '3 Lugar', 'Final']
 
 export default function StatsPage() {
   const { league } = useAuth()
@@ -77,7 +77,7 @@ export default function StatsPage() {
           sh = live.score_home
           sa = live.score_away
         }
-        
+
         const matchPreds = (predictions || []).filter(p => p.match_id === match.id)
         const total = matchPreds.length
 
@@ -152,7 +152,7 @@ export default function StatsPage() {
                   )}
                   <span className="font-semibold text-text-primary truncate">{translateTeam(match.team_home)}</span>
                 </div>
-                
+
                 <div className="flex flex-col items-center justify-center mx-2">
                   <span className="px-3 py-1 text-xs font-bold text-text-muted bg-bg-primary rounded-lg mb-1">VS</span>
                   {match.score_home !== null && match.score_away !== null && (

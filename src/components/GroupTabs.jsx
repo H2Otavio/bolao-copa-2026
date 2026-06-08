@@ -13,46 +13,99 @@ export default function GroupTabs({ groups, selected, onSelect, predCounts, matc
     }
   }, [selected])
 
+  const groupStage = groups.filter(g => g.length === 1)
+  const knockoutStage = groups.filter(g => g.length > 1)
+  const isKnockoutPhase = selected.length > 1
+
+  // Lock knockout until June 28, 2026
+  const knockoutUnlocked = Date.now() > new Date('2026-06-28T00:00:00Z').getTime()
+
+  const handlePhaseChange = (phase) => {
+    if (phase === 'groups' && isKnockoutPhase) onSelect('A')
+    if (phase === 'knockout' && !isKnockoutPhase) {
+      if (knockoutUnlocked) onSelect('R32')
+    }
+  }
+
+  const getKnockoutLabel = (g) => {
+    switch(g) {
+      case 'R32': return '16-avos'
+      case 'R16': return 'Oitavas'
+      case 'QF': return 'Quartas'
+      case 'SF': return 'Semifinal'
+      case '3RD': return '3º Lugar'
+      case 'FINAL': return 'Final'
+      default: return g
+    }
+  }
+
+  const visibleGroups = isKnockoutPhase ? knockoutStage : groupStage
+
   return (
-    <div
-      ref={scrollRef}
-      className="flex gap-2 overflow-x-auto pt-3 pb-3 scrollbar-none -mx-4 px-4 md:mx-0 md:px-0"
-      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-    >
-      {groups.map(group => {
-        const isActive = group === selected
-        const count = predCounts?.[group] || 0
-        const total = matchesPerGroup || 6
-        const isComplete = count >= total
+    <div className="flex flex-col gap-3">
+      {/* Nível 1: Seletor Principal */}
+      <div className="flex p-1 bg-bg-card rounded-xl border border-border">
+        <button
+          onClick={() => handlePhaseChange('groups')}
+          className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
+            !isKnockoutPhase ? 'bg-accent-green text-white shadow-md' : 'text-text-muted hover:text-text-primary'
+          }`}
+        >
+          Fase de Grupos
+        </button>
+        <button
+          onClick={() => handlePhaseChange('knockout')}
+          disabled={!knockoutUnlocked}
+          className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
+            isKnockoutPhase ? 'bg-accent-green text-white shadow-md' : 'text-text-muted hover:text-text-primary'
+          } ${!knockoutUnlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+          title={!knockoutUnlocked ? "Estará disponível após o fim da fase de grupos" : ""}
+        >
+          Mata-Mata {!knockoutUnlocked && '🔒'}
+        </button>
+      </div>
 
-        return (
-          <button
-            key={group}
-            data-active={isActive}
-            onClick={() => onSelect(group)}
-            className={`relative flex-shrink-0 ${
-              isActive ? 'tab-active' : 'tab-inactive'
-            }`}
-          >
-            <span className="text-sm">Grupo {group}</span>
+      {/* Nível 2: Sub-guias */}
+      <div
+        ref={scrollRef}
+        className="flex gap-2 overflow-x-auto pt-3 pb-3 scrollbar-none -mx-4 px-4 md:mx-0 md:px-0"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {visibleGroups.map(group => {
+          const isActive = group === selected
+          const count = predCounts?.[group] || 0
+          const total = matchesPerGroup || 0
+          const isComplete = total > 0 ? count >= total : false
 
-            {/* Prediction count badge */}
-            {predCounts && (
-              <span
-                className={`absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center text-xs font-bold rounded-full ${
-                  isComplete
-                    ? 'bg-accent-green text-white shadow-sm'
-                    : count > 0
-                    ? 'bg-accent-gold text-white shadow-sm'
-                    : 'bg-bg-primary text-text-muted border border-border shadow-sm'
-                }`}
-              >
-                {isComplete ? '✓' : count > 0 ? '·' : '!'}
-              </span>
-            )}
-          </button>
-        )
-      })}
+          return (
+            <button
+              key={group}
+              data-active={isActive}
+              onClick={() => onSelect(group)}
+              className={`relative flex-shrink-0 ${
+                isActive ? 'tab-active' : 'tab-inactive'
+              }`}
+            >
+              <span className="text-sm">{isKnockoutPhase ? getKnockoutLabel(group) : `Grupo ${group}`}</span>
+
+              {/* Prediction count badge */}
+              {predCounts && (
+                <span
+                  className={`absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center text-xs font-bold rounded-full ${
+                    isComplete
+                      ? 'bg-accent-green text-white shadow-sm'
+                      : count > 0
+                      ? 'bg-accent-gold text-white shadow-sm'
+                      : 'bg-bg-primary text-text-muted border border-border shadow-sm'
+                  }`}
+                >
+                  {isComplete ? '✓' : count > 0 ? '·' : '!'}
+                </span>
+              )}
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }

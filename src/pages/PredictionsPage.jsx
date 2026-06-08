@@ -6,17 +6,17 @@ import GroupTabs from '../components/GroupTabs'
 import MatchCard from '../components/MatchCard'
 import { useLiveScores } from '../lib/api'
 
-const CUP_GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L', 'R32', 'R16', 'QF', 'SF', '3RD', 'FINAL']
+const CUP_GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', '16avos', 'Oitavas', 'Quartas', 'Semi-final', '3 Lugar', 'Final']
 
 export default function PredictionsPage() {
   const { user, league } = useAuth()
   const { liveMatches } = useLiveScores()
   const location = useLocation()
-  
+
   // Initialize group from query param if available
   const initialGroup = new URLSearchParams(location.search).get('group') || 'A'
   const [selectedGroup, setSelectedGroup] = useState(initialGroup)
-  
+
   const [matches, setMatches] = useState([])
   const [predictions, setPredictions] = useState({})
   const [loading, setLoading] = useState(true)
@@ -45,9 +45,9 @@ export default function PredictionsPage() {
           .in('match_id', matchIds)
 
         const predMap = {}
-        ;(predData || []).forEach(p => {
-          predMap[p.match_id] = p
-        })
+          ; (predData || []).forEach(p => {
+            predMap[p.match_id] = p
+          })
         setPredictions(predMap)
       }
     } catch (err) {

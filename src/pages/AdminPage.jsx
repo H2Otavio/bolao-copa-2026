@@ -4,12 +4,12 @@ import { useAuth } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 import GroupTabs from '../components/GroupTabs'
 
-const CUP_GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L', 'R32', 'R16', 'QF', 'SF', '3RD', 'FINAL']
+const CUP_GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', '16avos', 'Oitavas', 'Quartas', 'Semi-final', '3 Lugar', 'Final']
 
 export default function AdminPage() {
   const { adminUser, adminLogout } = useAuth()
   const navigate = useNavigate()
-  
+
   // Leagues state
   const [leagues, setLeagues] = useState([])
   const [newLeagueName, setNewLeagueName] = useState('')
@@ -47,11 +47,11 @@ export default function AdminPage() {
 
       // Initialize results
       const resultMap = {}
-      ;(data || []).forEach(m => {
-        if (m.score_home !== null && m.score_away !== null) {
-          resultMap[m.id] = { home: m.score_home, away: m.score_away }
-        }
-      })
+        ; (data || []).forEach(m => {
+          if (m.score_home !== null && m.score_away !== null) {
+            resultMap[m.id] = { home: m.score_home, away: m.score_away }
+          }
+        })
       setResults(resultMap)
       setLoadingMatches(false)
     }
@@ -63,7 +63,7 @@ export default function AdminPage() {
     if (!newLeagueName.trim()) return
 
     const code = newLeagueName.toUpperCase().replace(/\s/g, '').slice(0, 8) +
-                 Math.random().toString(36).slice(2, 6).toUpperCase()
+      Math.random().toString(36).slice(2, 6).toUpperCase()
 
     setCreating(true)
     const { data, error } = await supabase
@@ -71,7 +71,7 @@ export default function AdminPage() {
       .insert({ name: newLeagueName, code, admin_name: adminUser.username })
       .select()
       .single()
-      
+
     if (error) {
       alert('Erro ao criar liga: ' + error.message)
     } else {
@@ -147,13 +147,13 @@ export default function AdminPage() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8 animate-fade-in">
-        
+
         {/* Ligas / Grupos Section */}
         <section className="mb-12">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
             <span>👥</span> Gerenciar Grupos / Ligas
           </h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Create form */}
             <div className="glass-card p-6 border-t-4 border-t-accent-gold h-fit">
@@ -220,7 +220,7 @@ export default function AdminPage() {
             </h2>
             <p className="text-sm text-text-muted mt-1">
               Os resultados inseridos aqui afetarão todas as ligas e usuários da plataforma instantaneamente.
-              <br/>(A API de tempo real preencherá automaticamente, use isso como ferramenta de correção/contingência)
+              <br />(A API de tempo real preencherá automaticamente, use isso como ferramenta de correção/contingência)
             </p>
           </div>
 
