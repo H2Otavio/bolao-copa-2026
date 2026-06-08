@@ -52,6 +52,28 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
       )
     : null
 
+  // Helper to convert emoji or 2-letter codes to FlagCDN URLs
+  const getFlagUrl = (flag) => {
+    if (!flag) return null
+    if (flag.startsWith('http')) return flag
+
+    let code = ''
+    const codePoints = Array.from(flag).map(c => c.codePointAt(0))
+    if (codePoints.length === 2 && codePoints[0] >= 0x1F1E6 && codePoints[0] <= 0x1F1FF) {
+      code = String.fromCharCode(codePoints[0] - 0x1F1E6 + 97) + String.fromCharCode(codePoints[1] - 0x1F1E6 + 97)
+    } else if (flag.length === 2 && /^[A-Za-z]{2}$/.test(flag)) {
+      code = flag.toLowerCase()
+    }
+
+    if (code) {
+      if (code === 'en') code = 'gb-eng'
+      if (code === 'sc') code = 'gb-sct'
+      if (code === 'wa') code = 'gb-wls'
+      return `https://flagcdn.com/w40/${code}.png`
+    }
+    return null
+  }
+
   // Format match date
   const formatDate = (dateStr) => {
     if (!dateStr) return ''
@@ -89,8 +111,8 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
           <span className="font-semibold text-sm md:text-base text-text-primary truncate text-right">
             {match.team_home}
           </span>
-          {match.flag_home?.startsWith('http') ? (
-            <img src={match.flag_home} alt={match.team_home} className="w-8 h-5 md:w-10 md:h-7 object-cover rounded shadow-sm flex-shrink-0" />
+          {getFlagUrl(match.flag_home) ? (
+            <img src={getFlagUrl(match.flag_home)} alt={match.team_home} className="w-8 h-5 md:w-10 md:h-7 object-cover rounded shadow-sm flex-shrink-0" />
           ) : (
             <span className="text-2xl md:text-3xl flex-shrink-0">{match.flag_home}</span>
           )}
@@ -123,8 +145,8 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
 
         {/* Away Team */}
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          {match.flag_away?.startsWith('http') ? (
-            <img src={match.flag_away} alt={match.team_away} className="w-8 h-5 md:w-10 md:h-7 object-cover rounded shadow-sm flex-shrink-0" />
+          {getFlagUrl(match.flag_away) ? (
+            <img src={getFlagUrl(match.flag_away)} alt={match.team_away} className="w-8 h-5 md:w-10 md:h-7 object-cover rounded shadow-sm flex-shrink-0" />
           ) : (
             <span className="text-2xl md:text-3xl flex-shrink-0">{match.flag_away}</span>
           )}
