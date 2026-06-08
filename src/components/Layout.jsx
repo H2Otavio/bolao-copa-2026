@@ -3,6 +3,7 @@ import { useAuth } from '../lib/auth'
 
 const navItems = [
   { to: '/palpites', label: 'Palpites', icon: '⚽' },
+  { to: '/cronograma', label: 'Calendário', icon: '📅' },
   { to: '/ranking', label: 'Ranking', icon: '🏆' },
   { to: '/estatisticas', label: 'Estatísticas', icon: '📊' },
 ]

@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import AdminLoginPage from './pages/AdminLoginPage'
 import PredictionsPage from './pages/PredictionsPage'
+import SchedulePage from './pages/SchedulePage'
 import RankingPage from './pages/RankingPage'
 import StatsPage from './pages/StatsPage'
 import AdminPage from './pages/AdminPage'
@@ -49,6 +50,16 @@ export default function App() {
           <ProtectedRoute>
             <Layout>
               <PredictionsPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/cronograma"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <SchedulePage />
             </Layout>
           </ProtectedRoute>
         }

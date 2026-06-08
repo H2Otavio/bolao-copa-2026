@@ -6,8 +6,9 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
   const [awayScore, setAwayScore] = useState('')
   const debounceRef = useRef(null)
 
-  // Check if match has started
-  const hasStarted = (match.match_date && new Date(match.match_date) < new Date()) || !!liveData
+  // Bloqueia 5 minutos antes do início (adiciona 5min ao tempo atual para comparação)
+  const lockTime = new Date(Date.now() + 5 * 60 * 1000)
+  const hasStarted = (match.match_date && new Date(match.match_date) < lockTime) || !!liveData
   const hasResult = match.score_home !== null && match.score_away !== null
 
   // Initialize from prediction
@@ -82,7 +83,7 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
   }
 
   return (
-    <div className={`glass-card p-4 md:p-5 transition-all duration-300 ${
+    <div id={`match-${match.id}`} className={`glass-card p-4 md:p-5 transition-all duration-300 ${
       hasResult ? 'border-accent-green/20' : ''
     } ${saved ? 'ring-2 ring-accent-green/40' : ''}`}>
       {/* Date row */}

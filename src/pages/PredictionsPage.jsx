@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 import GroupTabs from '../components/GroupTabs'
@@ -10,7 +11,12 @@ const CUP_GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L', 'R32', 'R16
 export default function PredictionsPage() {
   const { user, league } = useAuth()
   const { liveMatches } = useLiveScores()
-  const [selectedGroup, setSelectedGroup] = useState('A')
+  const location = useLocation()
+  
+  // Initialize group from query param if available
+  const initialGroup = new URLSearchParams(location.search).get('group') || 'A'
+  const [selectedGroup, setSelectedGroup] = useState(initialGroup)
+  
   const [matches, setMatches] = useState([])
   const [predictions, setPredictions] = useState({})
   const [loading, setLoading] = useState(true)
@@ -54,6 +60,21 @@ export default function PredictionsPage() {
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  // Scroll to match if URL contains matchId
+  useEffect(() => {
+    const matchId = new URLSearchParams(location.search).get('matchId')
+    if (matchId && matches.length > 0) {
+      setTimeout(() => {
+        const el = document.getElementById(`match-${matchId}`)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          el.classList.add('ring-4', 'ring-accent-gold', 'scale-[1.02]')
+          setTimeout(() => el.classList.remove('ring-4', 'ring-accent-gold', 'scale-[1.02]'), 2000)
+        }
+      }, 100)
+    }
+  }, [matches, location.search])
 
   const handleSavePrediction = async (matchId, scoreHome, scoreAway) => {
     if (scoreHome === '' || scoreAway === '' || scoreHome < 0 || scoreAway < 0) return
