@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { translateTeam } from '../lib/countries'
 
 export default function SchedulePage() {
   const [matches, setMatches] = useState([])
@@ -175,7 +176,7 @@ export default function SchedulePage() {
                       ) : (
                         <span className="text-3xl">{match.flag_home}</span>
                       )}
-                      <span className="text-sm font-bold text-center leading-tight truncate w-full">{match.team_home}</span>
+                      <span className="text-sm font-bold text-center leading-tight truncate w-full">{translateTeam(match.team_home)}</span>
                     </div>
 
                     <div className="font-bold text-text-muted">X</div>
@@ -186,7 +187,7 @@ export default function SchedulePage() {
                       ) : (
                         <span className="text-3xl">{match.flag_away}</span>
                       )}
-                      <span className="text-sm font-bold text-center leading-tight truncate w-full">{match.team_away}</span>
+                      <span className="text-sm font-bold text-center leading-tight truncate w-full">{translateTeam(match.team_away)}</span>
                     </div>
                   </div>
 

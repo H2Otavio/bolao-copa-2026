@@ -3,6 +3,7 @@ import { useAuth } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 import GroupTabs from '../components/GroupTabs'
 import { useLiveScores } from '../lib/api'
+import { translateTeam } from '../lib/countries'
 
 const CUP_GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L', 'R32', 'R16', 'QF', 'SF', '3RD', 'FINAL']
 
@@ -145,11 +146,11 @@ export default function StatsPage() {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   {getFlagUrl(match.flag_home) ? (
-                    <img src={getFlagUrl(match.flag_home)} alt={match.team_home} className="w-8 h-5 md:w-10 md:h-7 object-cover rounded shadow-sm flex-shrink-0" />
+                    <img src={getFlagUrl(match.flag_home)} alt={translateTeam(match.team_home)} className="w-8 h-5 md:w-10 md:h-7 object-cover rounded shadow-sm flex-shrink-0" />
                   ) : (
                     <span className="text-2xl">{match.flag_home}</span>
                   )}
-                  <span className="font-semibold text-text-primary truncate">{match.team_home}</span>
+                  <span className="font-semibold text-text-primary truncate">{translateTeam(match.team_home)}</span>
                 </div>
                 
                 <div className="flex flex-col items-center justify-center mx-2">
@@ -162,9 +163,9 @@ export default function StatsPage() {
                 </div>
 
                 <div className="flex items-center gap-3 flex-1 min-w-0 justify-end">
-                  <span className="font-semibold text-text-primary truncate">{match.team_away}</span>
+                  <span className="font-semibold text-text-primary truncate">{translateTeam(match.team_away)}</span>
                   {getFlagUrl(match.flag_away) ? (
-                    <img src={getFlagUrl(match.flag_away)} alt={match.team_away} className="w-8 h-5 md:w-10 md:h-7 object-cover rounded shadow-sm flex-shrink-0" />
+                    <img src={getFlagUrl(match.flag_away)} alt={translateTeam(match.team_away)} className="w-8 h-5 md:w-10 md:h-7 object-cover rounded shadow-sm flex-shrink-0" />
                   ) : (
                     <span className="text-2xl">{match.flag_away}</span>
                   )}
@@ -207,7 +208,7 @@ export default function StatsPage() {
                   <div className="flex justify-between text-xs text-text-muted">
                     <div className="flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 rounded-full bg-accent-green" />
-                      {match.team_home}
+                      {translateTeam(match.team_home)}
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 rounded-full bg-gray-500" />
@@ -215,7 +216,7 @@ export default function StatsPage() {
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 rounded-full bg-accent-gold" />
-                      {match.team_away}
+                      {translateTeam(match.team_away)}
                     </div>
                   </div>
 
