@@ -108,15 +108,15 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
       {/* Main match row */}
       <div className="flex items-center gap-3 md:gap-4">
         {/* Home Team */}
-        <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-          <span className="font-semibold text-sm md:text-base text-text-primary truncate text-right">
+        <div className="flex flex-col items-center justify-center flex-1 min-w-0">
+          {getFlagUrl(match.flag_home) ? (
+            <img src={getFlagUrl(match.flag_home)} alt={match.team_home} className="w-8 h-5 md:w-10 md:h-7 mb-1 object-cover rounded shadow-sm flex-shrink-0" />
+          ) : (
+            <span className="text-2xl md:text-3xl flex-shrink-0 mb-1">{match.flag_home}</span>
+          )}
+          <span className="font-semibold text-xs md:text-sm text-text-primary text-center break-words leading-tight w-full">
             {match.team_home}
           </span>
-          {getFlagUrl(match.flag_home) ? (
-            <img src={getFlagUrl(match.flag_home)} alt={match.team_home} className="w-8 h-5 md:w-10 md:h-7 object-cover rounded shadow-sm flex-shrink-0" />
-          ) : (
-            <span className="text-2xl md:text-3xl flex-shrink-0">{match.flag_home}</span>
-          )}
         </div>
 
         {/* Score Inputs */}
@@ -145,13 +145,13 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
         </div>
 
         {/* Away Team */}
-        <div className="flex items-center gap-2 flex-1 min-w-0">
+        <div className="flex flex-col items-center justify-center flex-1 min-w-0">
           {getFlagUrl(match.flag_away) ? (
-            <img src={getFlagUrl(match.flag_away)} alt={match.team_away} className="w-8 h-5 md:w-10 md:h-7 object-cover rounded shadow-sm flex-shrink-0" />
+            <img src={getFlagUrl(match.flag_away)} alt={match.team_away} className="w-8 h-5 md:w-10 md:h-7 mb-1 object-cover rounded shadow-sm flex-shrink-0" />
           ) : (
-            <span className="text-2xl md:text-3xl flex-shrink-0">{match.flag_away}</span>
+            <span className="text-2xl md:text-3xl flex-shrink-0 mb-1">{match.flag_away}</span>
           )}
-          <span className="font-semibold text-sm md:text-base text-text-primary truncate">
+          <span className="font-semibold text-xs md:text-sm text-text-primary text-center break-words leading-tight w-full">
             {match.team_away}
           </span>
         </div>

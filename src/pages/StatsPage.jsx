@@ -14,6 +14,25 @@ export default function StatsPage() {
   const [loading, setLoading] = useState(true)
   const [totalVoters, setTotalVoters] = useState(0)
 
+  const getFlagUrl = (flag) => {
+    if (!flag) return null
+    if (flag.startsWith('http')) return flag
+    let code = ''
+    const codePoints = Array.from(flag).map(c => c.codePointAt(0))
+    if (codePoints.length === 2 && codePoints[0] >= 0x1F1E6 && codePoints[0] <= 0x1F1FF) {
+      code = String.fromCharCode(codePoints[0] - 0x1F1E6 + 97) + String.fromCharCode(codePoints[1] - 0x1F1E6 + 97)
+    } else if (flag.length === 2 && /^[A-Za-z]{2}$/.test(flag)) {
+      code = flag.toLowerCase()
+    }
+    if (code) {
+      if (code === 'en') code = 'gb-eng'
+      if (code === 'sc') code = 'gb-sct'
+      if (code === 'wa') code = 'gb-wls'
+      return `https://flagcdn.com/w40/${code}.png`
+    }
+    return null
+  }
+
   const fetchStats = useCallback(async () => {
     setLoading(true)
     try {
@@ -125,8 +144,8 @@ export default function StatsPage() {
               {/* Match Header */}
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                  {match.flag_home?.startsWith('http') ? (
-                    <img src={match.flag_home} alt={match.team_home} className="w-8 h-5 md:w-10 md:h-7 object-cover rounded shadow-sm flex-shrink-0" />
+                  {getFlagUrl(match.flag_home) ? (
+                    <img src={getFlagUrl(match.flag_home)} alt={match.team_home} className="w-8 h-5 md:w-10 md:h-7 object-cover rounded shadow-sm flex-shrink-0" />
                   ) : (
                     <span className="text-2xl">{match.flag_home}</span>
                   )}
@@ -144,8 +163,8 @@ export default function StatsPage() {
 
                 <div className="flex items-center gap-3 flex-1 min-w-0 justify-end">
                   <span className="font-semibold text-text-primary truncate">{match.team_away}</span>
-                  {match.flag_away?.startsWith('http') ? (
-                    <img src={match.flag_away} alt={match.team_away} className="w-8 h-5 md:w-10 md:h-7 object-cover rounded shadow-sm flex-shrink-0" />
+                  {getFlagUrl(match.flag_away) ? (
+                    <img src={getFlagUrl(match.flag_away)} alt={match.team_away} className="w-8 h-5 md:w-10 md:h-7 object-cover rounded shadow-sm flex-shrink-0" />
                   ) : (
                     <span className="text-2xl">{match.flag_away}</span>
                   )}

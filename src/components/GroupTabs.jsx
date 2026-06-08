@@ -16,7 +16,7 @@ export default function GroupTabs({ groups, selected, onSelect, predCounts, matc
   return (
     <div
       ref={scrollRef}
-      className="flex gap-2 overflow-x-auto pb-2 scrollbar-none -mx-4 px-4 md:mx-0 md:px-0"
+      className="flex gap-2 overflow-x-auto pt-3 pb-3 scrollbar-none -mx-4 px-4 md:mx-0 md:px-0"
       style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
     >
       {groups.map(group => {
@@ -39,15 +39,15 @@ export default function GroupTabs({ groups, selected, onSelect, predCounts, matc
             {/* Prediction count badge */}
             {predCounts && (
               <span
-                className={`absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center text-[10px] font-bold rounded-full ${
+                className={`absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center text-xs font-bold rounded-full ${
                   isComplete
-                    ? 'bg-accent-green text-white'
+                    ? 'bg-accent-green text-white shadow-sm'
                     : count > 0
-                    ? 'bg-accent-gold text-white'
-                    : 'bg-bg-primary text-text-muted border border-border'
+                    ? 'bg-accent-gold text-white shadow-sm'
+                    : 'bg-bg-primary text-text-muted border border-border shadow-sm'
                 }`}
               >
-                {isComplete ? '✓' : count}
+                {isComplete ? '✓' : count > 0 ? '·' : '!'}
               </span>
             )}
           </button>
