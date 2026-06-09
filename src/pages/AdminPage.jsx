@@ -413,6 +413,7 @@ export default function AdminPage() {
             groups={CUP_GROUPS}
             selected={selectedGroup}
             onSelect={setSelectedGroup}
+            knockoutUnlocked={true}
           />
 
           {loadingMatches ? (
