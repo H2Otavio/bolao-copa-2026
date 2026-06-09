@@ -5,8 +5,9 @@ import { supabase } from '../lib/supabase'
 import GroupTabs from '../components/GroupTabs'
 import MatchCard from '../components/MatchCard'
 import { useLiveScores } from '../lib/api'
+import { generateKnockoutBracket } from '../lib/simulator'
 
-const CUP_GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', '16avos', 'Oitavas', 'Quartas', 'Semi-final', '3 Lugar', 'Final']
+const CUP_GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'R32', 'R16', 'QF', 'SF', '3RD', 'FINAL']
 
 export default function PredictionsPage() {
   const { user, league } = useAuth()
@@ -73,12 +74,14 @@ export default function PredictionsPage() {
 
   // Run Simulator when predictions change
   useEffect(() => {
-    if (knockoutUnlocked && allMatches.length > 0) {
-      import('../lib/simulator').then(sim => {
-        const pArray = Object.values(allPredictionsMap)
-        const bracket = sim.generateKnockoutBracket(allMatches, pArray)
+    if (knockoutUnlocked) {
+      try {
+        const bracket = generateKnockoutBracket(allMatches, Object.values(allPredictionsMap))
         setSimulatedBracket(bracket)
-      })
+      } catch (err) {
+        console.error('Error generating knockout bracket:', err)
+        setSimulatedBracket(null)
+      }
     } else {
       setSimulatedBracket(null)
     }
