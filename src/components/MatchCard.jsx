@@ -61,13 +61,13 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
       if (home === '' && away === '') {
-        // Delete prediction
+        // Delete prediction if both are empty
         onSave(match.id, { delete: true })
-      } else if (home !== '' && away !== '') {
-        const h = parseInt(home)
-        const a = parseInt(away)
+      } else {
+        const h = home === '' ? null : parseInt(home)
+        const a = away === '' ? null : parseInt(away)
         // Require penalty winner if it's a draw in knockout
-        if (isKnockout && h === a && !penWinner) return
+        if (isKnockout && h !== null && a !== null && h === a && !penWinner) return
 
         onSave(match.id, {
           scoreHome: h,
@@ -75,7 +75,7 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
           isSimulated: isSimulatedView,
           simulatedTeamHome: isSimulatedView ? displayTeamHome : null,
           simulatedTeamAway: isSimulatedView ? displayTeamAway : null,
-          advanceOnPenalties: (isKnockout && h === a) ? penWinner : null
+          advanceOnPenalties: (isKnockout && h !== null && a !== null && h === a) ? penWinner : null
         })
       }
     }, 800)

@@ -142,8 +142,8 @@ export default function PredictionsPage() {
     try {
       const existing = allPredictionsMap[matchId]
       const dbPayload = {
-        score_home: parseInt(scoreHome),
-        score_away: parseInt(scoreAway),
+        score_home: scoreHome === null ? null : parseInt(scoreHome),
+        score_away: scoreAway === null ? null : parseInt(scoreAway),
         is_simulated: isSimulated ?? false,
         simulated_team_home: simulatedTeamHome ?? null,
         simulated_team_away: simulatedTeamAway ?? null,
