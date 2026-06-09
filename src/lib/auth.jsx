@@ -3,15 +3,6 @@ import { supabase } from './supabase'
 
 const AuthContext = createContext(null)
 
-// Função nativa do navegador para criar Hash (SHA-256) segura sem depender de bibliotecas externas
-async function hashPassword(password) {
-  const encoder = new TextEncoder()
-  const data = encoder.encode(password)
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-  const hashArray = Array.from(new Uint8Array(hashBuffer))
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
-}
-
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [league, setLeague] = useState(null)
@@ -19,33 +10,69 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Carrega sessão comum
-    const stored = localStorage.getItem('bolao_session')
-    if (stored) {
-      try {
-        const session = JSON.parse(stored)
-        setUser(session.user)
-        setLeague(session.league)
-      } catch (e) {
-        localStorage.removeItem('bolao_session')
+    // Carrega sessão comum nativa do Supabase
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (session) {
+        // Busca os dados complementares do usuário na nossa tabela pública
+        const { data: userData } = await supabase
+          .from('users')
+          .select('*, leagues(*)')
+          .eq('auth_id', session.user.id)
+          .maybeSingle()
+        
+        if (userData) {
+          const leagueData = userData.leagues
+          delete userData.leagues
+          setUser(userData)
+          setLeague(leagueData)
+        }
       }
-    }
-
-    // Carrega sessão de admin
-    const storedAdmin = localStorage.getItem('bolao_admin_session')
-    if (storedAdmin) {
-      try {
-        setAdminUser(JSON.parse(storedAdmin))
-      } catch (e) {
-        localStorage.removeItem('bolao_admin_session')
+      
+      // Carrega sessão de admin (continua customizada pois é local/separada)
+      const storedAdmin = localStorage.getItem('bolao_admin_session')
+      if (storedAdmin) {
+        try {
+          setAdminUser(JSON.parse(storedAdmin))
+        } catch (e) {
+          localStorage.removeItem('bolao_admin_session')
+        }
       }
+      
+      setLoading(false)
     }
+    
+    checkUser()
 
-    setLoading(false)
-  }, [])
+    // Escuta mudanças na autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT') {
+        setUser(null)
+        setLeague(null)
+      } else if (session && !user) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('*, leagues(*)')
+          .eq('auth_id', session.user.id)
+          .maybeSingle()
+          
+        if (userData) {
+          const leagueData = userData.leagues
+          delete userData.leagues
+          setUser(userData)
+          setLeague(leagueData)
+        }
+      }
+    })
 
-  const register = async (name, password, code) => {
-    // Verifica se nome de usuário já existe globalmente
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [user])
+
+  const register = async (name, email, password, code) => {
+    // 1. Verifica se nome de usuário já existe globalmente
     const { data: existingUser } = await supabase
       .from('users')
       .select('id')
@@ -56,7 +83,7 @@ export function AuthProvider({ children }) {
       throw new Error('Este nome de usuário já está em uso.')
     }
 
-    // Procura o grupo pelo código
+    // 2. Procura o grupo pelo código
     const { data: leagueData, error: leagueError } = await supabase
       .from('leagues')
       .select('*')
@@ -67,61 +94,80 @@ export function AuthProvider({ children }) {
       throw new Error('Código do grupo não encontrado.')
     }
 
-    // Cria a Hash da senha usando a API nativa
-    const hash = await hashPassword(password)
+    // 3. Cadastra na Autenticação Oficial do Supabase
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: email.trim(),
+      password: password
+    })
 
-    // Insere o usuário
-    let { data: userData, error: createError } = await supabase
+    if (authError) throw new Error('Erro ao registrar e-mail: ' + authError.message)
+
+    // Se tiver confirmação de e-mail ativada, authData.user existirá mas session será nula
+    if (!authData.user) throw new Error('Erro inesperado ao criar conta.')
+
+    // 4. Salva na nossa tabela de usuários
+    const { data: userData, error: createError } = await supabase
       .from('users')
-      .insert({ name: name.trim(), password: hash, league_id: leagueData.id })
+      .insert({ 
+        auth_id: authData.user.id, 
+        email: email.trim(),
+        name: name.trim(), 
+        league_id: leagueData.id 
+      })
       .select()
       .single()
 
-    if (createError) throw new Error('Erro ao criar usuário: ' + createError.message)
+    if (createError) throw new Error('Erro ao criar perfil: ' + createError.message)
 
-    // Remove a hash da memória do cliente
-    delete userData.password
-
-    const session = { user: userData, league: leagueData }
-    localStorage.setItem('bolao_session', JSON.stringify(session))
-    setUser(userData)
-    setLeague(leagueData)
-    return session
+    // A sessão será gerida pelo evento onAuthStateChange
+    // Mas para o signup imediato (se e-mail automático confirmado estiver on):
+    if (authData.session) {
+      setUser(userData)
+      setLeague(leagueData)
+    } else {
+      // Caso precise confirmar o e-mail, lançamos a info
+      throw new Error('Check_Email')
+    }
   }
 
-  const login = async (name, password) => {
-    // Encontra usuário pelo nome e traz os dados da liga junto
+  const login = async (email, password) => {
+    // 1. Loga com Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password
+    })
+
+    if (authError) throw new Error('E-mail ou senha incorretos.')
+
+    // 2. Busca perfil
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('*, leagues(*)')
-      .eq('name', name.trim())
+      .eq('auth_id', authData.user.id)
       .maybeSingle()
 
     if (userError || !userData) {
-      throw new Error('Usuário não encontrado.')
-    }
-
-    // Verifica a senha
-    const hash = await hashPassword(password)
-    if (hash !== userData.password) {
-      throw new Error('Senha incorreta.')
+      // Usuário logou mas não tem perfil? Erro estranho, possivelmente os antigos sem elo
+      throw new Error('Perfil não encontrado para este e-mail. Peça ao Admin para migrar sua conta.')
     }
 
     const leagueData = userData.leagues
-
-    // Limpa a senha da memória do cliente
-    delete userData.password
     delete userData.leagues
 
-    const session = { user: userData, league: leagueData }
-    localStorage.setItem('bolao_session', JSON.stringify(session))
     setUser(userData)
     setLeague(leagueData)
-    return session
+    return { user: userData, league: leagueData }
+  }
+  
+  const resetPassword = async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: window.location.origin + '/reset-password-confirm',
+    })
+    if (error) throw new Error(error.message)
   }
 
-  const logout = () => {
-    localStorage.removeItem('bolao_session')
+  const logout = async () => {
+    await supabase.auth.signOut()
     setUser(null)
     setLeague(null)
   }
@@ -150,7 +196,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{ 
-      user, league, loading, login, register, logout, 
+      user, league, loading, login, register, resetPassword, logout, 
       adminUser, adminLogin, adminLogout 
     }}>
       {children}

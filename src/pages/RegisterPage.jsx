@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth'
 
 export default function RegisterPage() {
   const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
@@ -19,17 +20,21 @@ export default function RegisterPage() {
 
   const handleRegister = async (e) => {
     e.preventDefault()
-    if (!name.trim() || !password.trim() || !code.trim()) {
+    if (!name.trim() || !email.trim() || !password.trim() || !code.trim()) {
       setError('Preencha todos os campos.')
       return
     }
     setLoading(true)
     setError('')
     try {
-      await register(name, password, code)
+      await register(name, email, password, code)
       navigate('/palpites')
     } catch (err) {
-      setError(err.message)
+      if (err.message === 'Check_Email') {
+        setError('Conta criada! Verifique seu e-mail para confirmar.')
+      } else {
+        setError(err.message)
+      }
     } finally {
       setLoading(false)
     }
@@ -66,6 +71,17 @@ export default function RegisterPage() {
                 className="input-field"
                 maxLength={50}
                 autoComplete="username"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2">Seu E-mail (Para recuperação)</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="exemplo@email.com"
+                className="input-field"
+                autoComplete="email"
               />
             </div>
             <div>

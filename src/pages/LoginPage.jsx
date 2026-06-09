@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 
 export default function LoginPage() {
-  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -18,14 +18,14 @@ export default function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault()
-    if (!name.trim() || !password.trim()) {
-      setError('Preencha usuário e senha.')
+    if (!email.trim() || !password.trim()) {
+      setError('Preencha e-mail e senha.')
       return
     }
     setLoading(true)
     setError('')
     try {
-      await login(name, password)
+      await login(email, password)
       navigate('/palpites')
     } catch (err) {
       setError(err.message)
@@ -54,19 +54,23 @@ export default function LoginPage() {
         <div className="glass-card p-8">
           <form onSubmit={handleLogin} className="space-y-5 animate-fade-in">
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">Seu Nome / Usuário</label>
+              <label className="block text-sm font-medium text-text-secondary mb-2">Seu E-mail</label>
               <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ex: joaosilva"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="exemplo@email.com"
                 className="input-field"
-                maxLength={50}
-                autoComplete="username"
+                autoComplete="email"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">Senha</label>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-medium text-text-secondary">Senha</label>
+                <Link to="/reset-password" className="text-xs text-accent-gold hover:text-accent-gold-light transition-colors">
+                  Esqueceu a senha?
+                </Link>
+              </div>
               <input
                 type="password"
                 value={password}

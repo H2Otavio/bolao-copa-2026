@@ -10,6 +10,7 @@ import RankingPage from './pages/RankingPage'
 import StatsPage from './pages/StatsPage'
 import RulesPage from './pages/RulesPage'
 import AdminPage from './pages/AdminPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -42,6 +43,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<LoginPage />} />
       <Route path="/cadastrar" element={<RegisterPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/admin-login" element={<AdminLoginPage />} />
       
       {/* Rotas de Usuário Comum */}
