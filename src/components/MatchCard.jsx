@@ -16,8 +16,8 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
   // Determine if it's knockout
   const isKnockout = match.cup_group && match.cup_group.length > 1
 
-  // Handle simulation overlay
-  const isRealMatchReady = !/1[A-L]|2[A-L]|3rd|Vencedor|Winner|Perdedor|Loser/.test(match.team_home || '')
+  const placeholderRegex = /1[A-L]|2[A-L]|3rd|Vencedor|Winner|Perdedor|Loser|Runner-up/
+  const isRealMatchReady = !placeholderRegex.test(match.team_home || '') && !placeholderRegex.test(match.team_away || '')
   
   let displayTeamHome = match.team_home
   let displayTeamAway = match.team_away
