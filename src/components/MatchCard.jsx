@@ -60,7 +60,10 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
   const triggerSave = (home, away, penWinner = penaltyWinner) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      if (home !== '' && away !== '') {
+      if (home === '' && away === '') {
+        // Delete prediction
+        onSave(match.id, { delete: true })
+      } else if (home !== '' && away !== '') {
         const h = parseInt(home)
         const a = parseInt(away)
         // Require penalty winner if it's a draw in knockout

@@ -102,8 +102,39 @@ export default function PredictionsPage() {
   }, [allMatches, location.search])
 
   const handleSavePrediction = async (matchId, payload) => {
-    const { scoreHome, scoreAway, isSimulated, simulatedTeamHome, simulatedTeamAway, advanceOnPenalties } = payload
-    if (scoreHome === '' || scoreAway === '' || scoreHome < 0 || scoreAway < 0) return
+    // Handling deletion if payload signals to delete
+    if (payload && payload.delete) {
+      setSaving(prev => ({ ...prev, [matchId]: true }))
+      try {
+        const existing = allPredictionsMap[matchId]
+        if (existing) {
+          await supabase.from('predictions').delete().eq('id', existing.id)
+          setAllPredictionsMap(prev => {
+            const newMap = { ...prev }
+            delete newMap[matchId]
+            return newMap
+          })
+        }
+      } catch (err) {
+        console.error('Error deleting prediction:', err)
+      } finally {
+        setSaving(prev => ({ ...prev, [matchId]: false }))
+      }
+      return
+    }
+
+    // Fallback for older cached versions of MatchCard
+    let scoreHome, scoreAway, isSimulated, simulatedTeamHome, simulatedTeamAway, advanceOnPenalties
+    if (typeof payload === 'number') {
+       // user has cached MatchCard calling onSave(id, h, a)
+       scoreHome = payload
+       scoreAway = arguments[2]
+       isSimulated = false
+    } else {
+       ({ scoreHome, scoreAway, isSimulated, simulatedTeamHome, simulatedTeamAway, advanceOnPenalties } = payload)
+    }
+
+    if (scoreHome === '' || scoreAway === '' || scoreHome === undefined || scoreAway === undefined || scoreHome < 0 || scoreAway < 0 || isNaN(scoreHome) || isNaN(scoreAway)) return
 
     setSaving(prev => ({ ...prev, [matchId]: true }))
     setSaveSuccess(prev => ({ ...prev, [matchId]: false }))
@@ -155,38 +186,22 @@ export default function PredictionsPage() {
   // Count predictions per group for badges
   const [predCounts, setPredCounts] = useState({})
   useEffect(() => {
-    async function fetchCounts() {
-      const { data } = await supabase
-        .from('predictions')
-        .select('match_id')
-        .eq('user_id', user.id)
-
-      if (data) {
-        // Need to cross-reference with matches to get group
-        const { data: allMatches } = await supabase
-          .from('matches')
-          .select('id, cup_group')
-
-        if (allMatches) {
-          const matchGroupMap = {}
-          allMatches.forEach(m => { matchGroupMap[m.id] = m.cup_group })
-
-          const counts = {}
-          const seenMatches = new Set()
-          
-          data.forEach(p => {
-            if (!seenMatches.has(p.match_id)) {
-              seenMatches.add(p.match_id)
-              const grp = matchGroupMap[p.match_id]
-              if (grp) counts[grp] = (counts[grp] || 0) + 1
-            }
-          })
-          setPredCounts(counts)
+    // Only count predictions that actually have scores
+    const counts = {}
+    const seenMatches = new Set()
+    
+    Object.values(allPredictionsMap).forEach(p => {
+      if (p.score_home !== null && p.score_away !== null && !seenMatches.has(p.match_id)) {
+        seenMatches.add(p.match_id)
+        const match = allMatches.find(m => m.id === p.match_id)
+        if (match && match.cup_group) {
+          counts[match.cup_group] = (counts[match.cup_group] || 0) + 1
         }
       }
-    }
-    fetchCounts()
-  }, [user.id, allPredictionsMap])
+    })
+    
+    setPredCounts(counts)
+  }, [allPredictionsMap, allMatches])
 
   return (
     <div className="animate-fade-in">
