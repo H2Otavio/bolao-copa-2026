@@ -80,34 +80,11 @@ export default function RankingPage() {
             if (score.exactBothPoints > 0) exactScores++
             if (score.winnerPoints > 0) correctResults++
           })
-
-          // Calculate bonus points for correctly predicting group placements
-          const userPlacements = getGroupPlacements(matches || [], userPreds, false) // no fallback
-          const userPosMap = getPositionMap(userPlacements)
-          Object.keys(realPosMap).forEach(teamId => {
-            // To earn placement bonus, the user must have predicted at least 1 match involving this team
-            const hasPredictedTeam = userPreds.some(p => {
-              const m = matchMap[p.match_id]
-              return m && (m.team_home === teamId || m.team_away === teamId)
-            })
-
-            if (hasPredictedTeam && userPosMap[teamId]) {
-              if (userPosMap[teamId] === realPosMap[teamId]) {
-                bonusPoints += 2 // Correct team + correct position
-              } else {
-                bonusPoints += 1 // Correct team advancing, wrong position
-              }
-            }
-          })
-
-          totalPoints += bonusPoints
-
           return {
             ...u,
             totalPoints,
             exactScores,
             correctResults,
-            bonusPoints,
             totalPredictions,
           }
         })
@@ -182,7 +159,6 @@ export default function RankingPage() {
                 </p>
                 <p className="text-xs text-text-muted">
                   {player.correctResults} acertos · {player.exactScores} exatos
-                  {player.bonusPoints > 0 && ` · ${player.bonusPoints} bônus`}
                 </p>
               </div>
 
