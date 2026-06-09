@@ -51,13 +51,24 @@ export default function Layout({ children }) {
 
           {/* User Info + Logout */}
           <div className="flex items-center gap-3">
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-medium text-text-primary">{user?.name}</p>
-              <p className="text-xs text-text-muted">{league?.name}</p>
+            <div className="text-right hidden sm:block relative group">
+              <div className="cursor-pointer py-1">
+                <p className="text-sm font-medium text-text-primary group-hover:text-accent-green-light transition-colors flex items-center justify-end gap-1">
+                  {user?.name} <span className="text-[10px]">▼</span>
+                </p>
+                <p className="text-xs text-text-muted">{league?.name}</p>
+              </div>
+              
+              {/* Dropdown Menu */}
+              <div className="absolute right-0 top-full mt-1 w-48 bg-bg-card border border-border rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all overflow-hidden">
+                <NavLink to="/alterar-senha" className="block px-4 py-3 text-sm text-text-secondary hover:text-white hover:bg-bg-secondary transition-colors">
+                  🔑 Alterar Senha
+                </NavLink>
+              </div>
             </div>
             <button
               onClick={handleLogout}
-              className="p-2 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-all"
+              className="p-2 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-all ml-1"
               title="Sair"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

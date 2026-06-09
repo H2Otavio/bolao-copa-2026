@@ -12,6 +12,7 @@ import RulesPage from './pages/RulesPage'
 import AdminPage from './pages/AdminPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import ResetPasswordConfirmPage from './pages/ResetPasswordConfirmPage'
+import UpdatePasswordPage from './pages/UpdatePasswordPage'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -95,6 +96,16 @@ export default function App() {
           <ProtectedRoute>
             <Layout>
               <RulesPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/alterar-senha"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <UpdatePasswordPage />
             </Layout>
           </ProtectedRoute>
         }
