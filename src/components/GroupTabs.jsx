@@ -71,8 +71,16 @@ export default function GroupTabs({ groups, selected, onSelect, predCounts, matc
         {visibleGroups.map(group => {
           const isActive = group === selected
           const count = predCounts?.[group] || 0
-          const total = matchesPerGroup || 0
-          const isComplete = total > 0 ? count >= total : false
+          
+          let total = 6
+          if (group === 'R32') total = 16
+          else if (group === 'R16') total = 8
+          else if (group === 'QF') total = 4
+          else if (group === 'SF') total = 2
+          else if (group === '3RD') total = 1
+          else if (group === 'FINAL') total = 1
+          
+          const isComplete = count >= total
 
           return (
             <button
