@@ -26,11 +26,11 @@ export default function GroupTabs({ groups, selected, onSelect, predCounts, matc
 
   const getKnockoutLabel = (g) => {
     switch(g) {
-      case 'R32': return '16-avos'
+      case 'R32': return '16avos'
       case 'R16': return 'Oitavas'
       case 'QF': return 'Quartas'
-      case 'SF': return 'Semifinal'
-      case '3RD': return '3º Lugar'
+      case 'SF': return 'Semi-final'
+      case '3RD': return '3 Lugar'
       case 'FINAL': return 'Final'
       default: return g
     }
