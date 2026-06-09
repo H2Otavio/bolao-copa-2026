@@ -4,7 +4,7 @@ import { useAuth } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 import GroupTabs from '../components/GroupTabs'
 
-const CUP_GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', '16 avos', 'Oitavas', 'Quartas', 'Semi-final', '3 Lugar', 'Final']
+const CUP_GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'R32', 'R16', 'QF', 'SF', '3RD', 'FINAL']
 
 export default function AdminPage() {
   const { adminUser, adminLogout } = useAuth()
