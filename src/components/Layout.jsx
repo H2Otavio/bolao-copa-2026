@@ -24,7 +24,7 @@ export default function Layout({ children }) {
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           {/* Logo */}
           <NavLink to="/palpites" className="flex items-center gap-2 group">
-            <span className="text-2xl group-hover:scale-110 transition-transform">⚽</span>
+            <img src="/trionda.png" alt="Trionda 2026" className="w-8 h-8 group-hover:scale-110 transition-transform object-contain drop-shadow-md" />
             <span className="font-bold text-lg gradient-text hidden sm:block">Bolão 2026</span>
           </NavLink>
 
