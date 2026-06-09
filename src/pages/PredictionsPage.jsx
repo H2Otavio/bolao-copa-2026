@@ -17,8 +17,10 @@ export default function PredictionsPage() {
   const initialGroup = new URLSearchParams(location.search).get('group') || 'A'
   const [selectedGroup, setSelectedGroup] = useState(initialGroup)
 
-  const [matches, setMatches] = useState([])
-  const [predictions, setPredictions] = useState({})
+  const [allMatches, setAllMatches] = useState([])
+  const [allPredictionsMap, setAllPredictionsMap] = useState({})
+  const [knockoutUnlocked, setKnockoutUnlocked] = useState(false)
+  const [simulatedBracket, setSimulatedBracket] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState({})
   const [saveSuccess, setSaveSuccess] = useState({})
@@ -26,40 +28,60 @@ export default function PredictionsPage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      // Fetch matches for selected group
-      const { data: matchData } = await supabase
+      // Fetch ALL matches
+      const { data: mData } = await supabase
         .from('matches')
         .select('*')
-        .eq('cup_group', selectedGroup)
         .order('match_number')
+      
+      const allM = mData || []
+      setAllMatches(allM)
 
-      setMatches(matchData || [])
+      // Fetch ALL user's predictions
+      const { data: pData } = await supabase
+        .from('predictions')
+        .select('*')
+        .eq('user_id', user.id)
 
-      // Fetch user's predictions for these matches
-      if (matchData && matchData.length > 0) {
-        const matchIds = matchData.map(m => m.id)
-        const { data: predData } = await supabase
-          .from('predictions')
-          .select('*')
-          .eq('user_id', user.id)
-          .in('match_id', matchIds)
-
-        const predMap = {}
-          ; (predData || []).forEach(p => {
-            predMap[p.match_id] = p
-          })
-        setPredictions(predMap)
-      }
+      const pMap = {}
+      let groupCount = 0
+      const groupMatches = new Set(allM.filter(m => m.cup_group && m.cup_group.length === 1).map(m => m.id))
+      
+      ;(pData || []).forEach(p => {
+        pMap[p.match_id] = p
+        if (groupMatches.has(p.match_id) && p.score_home !== null && p.score_away !== null) {
+          groupCount++
+        }
+      })
+      
+      setAllPredictionsMap(pMap)
+      setKnockoutUnlocked(groupCount === 72)
     } catch (err) {
       console.error('Error fetching data:', err)
     } finally {
       setLoading(false)
     }
-  }, [selectedGroup, user.id])
+  }, [user.id])
 
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  // Run Simulator when predictions change
+  useEffect(() => {
+    if (knockoutUnlocked && allMatches.length > 0) {
+      import('../lib/simulator').then(sim => {
+        const pArray = Object.values(allPredictionsMap)
+        const bracket = sim.generateKnockoutBracket(allMatches, pArray)
+        setSimulatedBracket(bracket)
+      })
+    } else {
+      setSimulatedBracket(null)
+    }
+  }, [knockoutUnlocked, allMatches, allPredictionsMap])
+
+  // Filter matches for current view
+  const displayMatches = allMatches.filter(m => m.cup_group === selectedGroup)
 
   // Scroll to match if URL contains matchId
   useEffect(() => {
@@ -76,38 +98,45 @@ export default function PredictionsPage() {
     }
   }, [matches, location.search])
 
-  const handleSavePrediction = async (matchId, scoreHome, scoreAway) => {
+  const handleSavePrediction = async (matchId, payload) => {
+    const { scoreHome, scoreAway, isSimulated, simulatedTeamHome, simulatedTeamAway, advanceOnPenalties } = payload
     if (scoreHome === '' || scoreAway === '' || scoreHome < 0 || scoreAway < 0) return
 
     setSaving(prev => ({ ...prev, [matchId]: true }))
     setSaveSuccess(prev => ({ ...prev, [matchId]: false }))
 
     try {
-      const existing = predictions[matchId]
+      const existing = allPredictionsMap[matchId]
+      const dbPayload = {
+        score_home: parseInt(scoreHome),
+        score_away: parseInt(scoreAway),
+        is_simulated: isSimulated ?? false,
+        simulated_team_home: simulatedTeamHome ?? null,
+        simulated_team_away: simulatedTeamAway ?? null,
+        advance_on_penalties: advanceOnPenalties ?? null,
+        updated_at: new Date().toISOString()
+      }
 
       if (existing) {
         await supabase
           .from('predictions')
-          .update({
-            score_home: parseInt(scoreHome),
-            score_away: parseInt(scoreAway),
-            updated_at: new Date().toISOString(),
-          })
+          .update(dbPayload)
           .eq('id', existing.id)
+          
+        setAllPredictionsMap(prev => ({ ...prev, [matchId]: { ...existing, ...dbPayload } }))
       } else {
         const { data } = await supabase
           .from('predictions')
           .insert({
             user_id: user.id,
             match_id: matchId,
-            score_home: parseInt(scoreHome),
-            score_away: parseInt(scoreAway),
+            ...dbPayload
           })
           .select()
           .single()
 
         if (data) {
-          setPredictions(prev => ({ ...prev, [matchId]: data }))
+          setAllPredictionsMap(prev => ({ ...prev, [matchId]: data }))
         }
       }
 
@@ -172,7 +201,7 @@ export default function PredictionsPage() {
         </div>
       ) : (
         <div className="space-y-4 mt-6 animate-slide-up">
-          {matches.map((match) => {
+          {displayMatches.map((match) => {
             // Merge live scores
             const live = liveMatches[match.match_number]
             const mergedMatch = { ...match }
@@ -185,17 +214,18 @@ export default function PredictionsPage() {
               <MatchCard
                 key={match.id}
                 match={mergedMatch}
-                prediction={predictions[match.id]}
+                prediction={allPredictionsMap[match.id]}
                 onSave={handleSavePrediction}
                 saving={saving[match.id]}
                 saved={saveSuccess[match.id]}
                 liveData={live}
+                simulatedMatch={simulatedBracket ? simulatedBracket[match.match_number] : null}
               />
             )
           })}
-          {matches.length === 0 && (
+          {displayMatches.length === 0 && (
             <div className="glass-card p-12 text-center">
-              <p className="text-text-muted text-lg">Nenhum jogo encontrado para o Grupo {selectedGroup}.</p>
+              <p className="text-text-muted text-lg">Nenhum jogo encontrado para {selectedGroup}.</p>
             </div>
           )}
         </div>

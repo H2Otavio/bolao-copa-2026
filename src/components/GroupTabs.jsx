@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react'
 
-export default function GroupTabs({ groups, selected, onSelect, predCounts, matchesPerGroup }) {
+export default function GroupTabs({ groups, selected, onSelect, predCounts, matchesPerGroup, knockoutUnlocked }) {
   const scrollRef = useRef(null)
 
   // Auto-scroll to selected tab
@@ -16,9 +16,6 @@ export default function GroupTabs({ groups, selected, onSelect, predCounts, matc
   const groupStage = groups.filter(g => g.length === 1)
   const knockoutStage = groups.filter(g => g.length > 1)
   const isKnockoutPhase = selected.length > 1
-
-  // Lock knockout until June 28, 2026
-  const knockoutUnlocked = Date.now() > new Date('2026-06-28T00:00:00Z').getTime()
 
   const handlePhaseChange = (phase) => {
     if (phase === 'groups' && isKnockoutPhase) onSelect('A')
@@ -59,7 +56,7 @@ export default function GroupTabs({ groups, selected, onSelect, predCounts, matc
           className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
             isKnockoutPhase ? 'bg-accent-green text-white shadow-md' : 'text-text-muted hover:text-text-primary'
           } ${!knockoutUnlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-          title={!knockoutUnlocked ? "Estará disponível após o fim da fase de grupos" : ""}
+          title={!knockoutUnlocked ? "Preencha todos os 72 jogos da fase de grupos para liberar o simulador de Mata-Mata!" : ""}
         >
           Mata-Mata {!knockoutUnlocked && '🔒'}
         </button>

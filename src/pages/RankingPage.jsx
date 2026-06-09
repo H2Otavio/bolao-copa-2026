@@ -3,6 +3,7 @@ import { useAuth } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 import { calcScore } from '../lib/scoring'
 import { useLiveScores } from '../lib/api'
+import { getGroupPlacements } from '../lib/simulator'
 
 export default function RankingPage() {
   const { league, user } = useAuth()
@@ -20,7 +21,7 @@ export default function RankingPage() {
           .select('*')
           .eq('league_id', league.id)
 
-        // Get all matches (we need all because live data might exist for matches with null scores in DB)
+        // Get all matches
         const { data: matches } = await supabase
           .from('matches')
           .select('*')
@@ -34,6 +35,7 @@ export default function RankingPage() {
 
         // Build match map and merge LIVE SCORES
         const matchMap = {}
+        const realPredictions = []
         ;(matches || []).forEach(m => { 
           const live = liveMatches[m.match_number]
           // Apply live score if the game is finished OR has goals
@@ -44,7 +46,21 @@ export default function RankingPage() {
             sa = live.score_away
           }
           matchMap[m.id] = { ...m, score_home: sh, score_away: sa }
+          if (sh !== null && sa !== null) {
+            realPredictions.push({ match_id: m.id, score_home: sh, score_away: sa })
+          }
         })
+
+        // Real group placements
+        const realPlacements = getGroupPlacements(matches || [], realPredictions)
+        const getPositionMap = (placements) => {
+          const map = {}
+          Object.keys(placements.firsts).forEach(g => { if (placements.firsts[g]) map[placements.firsts[g].id] = `1${g}` })
+          Object.keys(placements.seconds).forEach(g => { if (placements.seconds[g]) map[placements.seconds[g].id] = `2${g}` })
+          placements.bestThirds.forEach(t => { if (t) map[t.id] = '3' })
+          return map
+        }
+        const realPosMap = getPositionMap(realPlacements)
 
         // Calculate scores for each user
         const userScores = (users || []).map(u => {
@@ -52,6 +68,7 @@ export default function RankingPage() {
           let totalPoints = 0
           let exactScores = 0
           let correctResults = 0
+          let bonusPoints = 0
           let totalPredictions = userPreds.length
 
           userPreds.forEach(pred => {
@@ -64,11 +81,27 @@ export default function RankingPage() {
             if (score.winnerPoints > 0) correctResults++
           })
 
+          // Calculate bonus points for correctly predicting group placements
+          const userPlacements = getGroupPlacements(matches || [], userPreds)
+          const userPosMap = getPositionMap(userPlacements)
+          Object.keys(realPosMap).forEach(teamId => {
+            if (userPosMap[teamId]) {
+              if (userPosMap[teamId] === realPosMap[teamId]) {
+                bonusPoints += 2 // Correct team + correct position
+              } else {
+                bonusPoints += 1 // Correct team advancing, wrong position
+              }
+            }
+          })
+
+          totalPoints += bonusPoints
+
           return {
             ...u,
             totalPoints,
             exactScores,
             correctResults,
+            bonusPoints,
             totalPredictions,
           }
         })
@@ -143,6 +176,7 @@ export default function RankingPage() {
                 </p>
                 <p className="text-xs text-text-muted">
                   {player.correctResults} acertos · {player.exactScores} exatos
+                  {player.bonusPoints > 0 && ` · ${player.bonusPoints} bônus`}
                 </p>
               </div>
 

@@ -1,0 +1,179 @@
+/**
+ * Simulator Engine for the 2026 World Cup
+ * Calculates group standings and knockout brackets based on user predictions.
+ */
+
+// Helper to calculate standings from an array of group matches and their predictions
+export function calculateGroupStandings(groupMatches, predictions) {
+  const teams = {}
+
+  // Initialize teams
+  groupMatches.forEach(m => {
+    if (!teams[m.team_home]) teams[m.team_home] = { id: m.team_home, flag: m.flag_home, points: 0, goalsFor: 0, goalsAgainst: 0, matchesPlayed: 0 }
+    if (!teams[m.team_away]) teams[m.team_away] = { id: m.team_away, flag: m.flag_away, points: 0, goalsFor: 0, goalsAgainst: 0, matchesPlayed: 0 }
+  })
+
+  // Apply predictions
+  groupMatches.forEach(m => {
+    const pred = predictions.find(p => p.match_id === m.id)
+    if (pred && pred.score_home !== null && pred.score_away !== null) {
+      const h = pred.score_home
+      const a = pred.score_away
+
+      teams[m.team_home].matchesPlayed++
+      teams[m.team_away].matchesPlayed++
+      
+      teams[m.team_home].goalsFor += h
+      teams[m.team_home].goalsAgainst += a
+      teams[m.team_away].goalsFor += a
+      teams[m.team_away].goalsAgainst += h
+
+      if (h > a) {
+        teams[m.team_home].points += 3
+      } else if (a > h) {
+        teams[m.team_away].points += 3
+      } else {
+        teams[m.team_home].points += 1
+        teams[m.team_away].points += 1
+      }
+    }
+  })
+
+  // Convert to array and calculate goal diff
+  const standings = Object.values(teams).map(t => ({
+    ...t,
+    goalDiff: t.goalsFor - t.goalsAgainst
+  }))
+
+  // Sort: Points > GD > GF > Alphabetical
+  standings.sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points
+    if (b.goalDiff !== a.goalDiff) return b.goalDiff - a.goalDiff
+    if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor
+    return a.id.localeCompare(b.id)
+  })
+
+  return standings
+}
+
+// Generate placements for all groups
+export function getGroupPlacements(allMatches, allPredictions) {
+  const groupMatches = allMatches.filter(m => m.cup_group && m.cup_group.length === 1)
+  const groups = {}
+  
+  groupMatches.forEach(m => {
+    if (!groups[m.cup_group]) groups[m.cup_group] = []
+    groups[m.cup_group].push(m)
+  })
+
+  const firsts = {}
+  const seconds = {}
+  const thirds = []
+
+  Object.keys(groups).forEach(group => {
+    const st = calculateGroupStandings(groups[group], allPredictions)
+    if (st.length >= 3) {
+      firsts[group] = st[0]
+      seconds[group] = st[1]
+      thirds.push({ ...st[2], group })
+    }
+  })
+
+  thirds.sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points
+    if (b.goalDiff !== a.goalDiff) return b.goalDiff - a.goalDiff
+    if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor
+    return a.id.localeCompare(b.id)
+  })
+  const bestThirds = thirds.slice(0, 8)
+
+  return { firsts, seconds, bestThirds }
+}
+
+// Generate the Simulated Knockout Bracket
+export function generateKnockoutBracket(allMatches, allPredictions) {
+  const placements = getGroupPlacements(allMatches, allPredictions)
+  const { firsts, seconds, bestThirds } = placements
+
+  // Wait until we have enough teams to form the bracket
+  if (Object.keys(firsts).length < 12 || bestThirds.length < 8) {
+    return null // Not all groups are fully populated/predicted
+  }
+
+  // 4. Bracket Mapping (Deterministic 32-team R32)
+  const simulatedMatches = {}
+
+  // Function to create a match
+  const setMatch = (mNum, homeTeam, awayTeam) => {
+    simulatedMatches[mNum] = {
+      match_number: mNum,
+      team_home: homeTeam?.id,
+      flag_home: homeTeam?.flag,
+      team_away: awayTeam?.id,
+      flag_away: awayTeam?.flag,
+    }
+  }
+
+  // R32 (Matches 73 to 88)
+  setMatch(73, firsts['A'], bestThirds[0])
+  setMatch(74, seconds['E'], seconds['F'])
+  setMatch(75, firsts['C'], bestThirds[1])
+  setMatch(76, firsts['D'], seconds['A'])
+  setMatch(77, firsts['E'], bestThirds[2])
+  setMatch(78, seconds['G'], seconds['H'])
+  setMatch(79, firsts['G'], bestThirds[3])
+  setMatch(80, firsts['H'], seconds['B'])
+  setMatch(81, firsts['I'], bestThirds[4])
+  setMatch(82, seconds['I'], seconds['J'])
+  setMatch(83, firsts['K'], bestThirds[5])
+  setMatch(84, firsts['J'], seconds['C'])
+  setMatch(85, firsts['B'], bestThirds[6])
+  setMatch(86, seconds['K'], seconds['L'])
+  setMatch(87, firsts['F'], bestThirds[7])
+  setMatch(88, firsts['L'], seconds['D'])
+
+  // Helper to resolve winner of a match
+  const getWinner = (mNum) => {
+    const matchId = allMatches.find(m => m.match_number === mNum)?.id
+    const pred = allPredictions.find(p => p.match_id === matchId)
+    if (!pred || pred.score_home === null || pred.score_away === null) return null
+    
+    const sim = simulatedMatches[mNum]
+    if (pred.score_home > pred.score_away) return { id: sim.team_home, flag: sim.flag_home }
+    if (pred.score_away > pred.score_home) return { id: sim.team_away, flag: sim.flag_away }
+    
+    // Draw -> resolved by penalties
+    if (pred.advance_on_penalties === sim.team_home) return { id: sim.team_home, flag: sim.flag_home }
+    if (pred.advance_on_penalties === sim.team_away) return { id: sim.team_away, flag: sim.flag_away }
+    
+    return null // Needs penalty resolution
+  }
+
+  // R16 (Matches 89 to 96)
+  for (let i = 0; i < 8; i++) {
+    setMatch(89 + i, getWinner(73 + i * 2), getWinner(74 + i * 2))
+  }
+
+  // QF (Matches 97 to 100)
+  for (let i = 0; i < 4; i++) {
+    setMatch(97 + i, getWinner(89 + i * 2), getWinner(90 + i * 2))
+  }
+
+  // SF (Matches 101 to 102)
+  for (let i = 0; i < 2; i++) {
+    setMatch(101 + i, getWinner(97 + i * 2), getWinner(98 + i * 2))
+  }
+
+  // Third Place (Match 103) & Final (Match 104)
+  const getLoser = (mNum) => {
+    const winner = getWinner(mNum)
+    if (!winner) return null
+    const sim = simulatedMatches[mNum]
+    return winner.id === sim.team_home ? { id: sim.team_away, flag: sim.flag_away } : { id: sim.team_home, flag: sim.flag_home }
+  }
+
+  setMatch(103, getLoser(101), getLoser(102)) // Losers of SF
+  setMatch(104, getWinner(101), getWinner(102)) // Winners of SF
+
+  return simulatedMatches
+}
