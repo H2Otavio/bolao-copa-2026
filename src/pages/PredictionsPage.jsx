@@ -60,13 +60,22 @@ export default function PredictionsPage() {
 
   const knockoutUnlocked = useMemo(() => {
     let count = 0
-    Object.values(allPredictionsMap).forEach(p => {
-      if (groupMatches.has(p.match_id) && p.score_home !== null && p.score_away !== null) {
-        count++
+    const lockTime = new Date(Date.now() + 5 * 60 * 1000)
+
+    allMatches.forEach(m => {
+      if (m.cup_group && m.cup_group.length === 1) {
+        const p = allPredictionsMap[m.id]
+        const isFilled = p && p.score_home !== null && p.score_away !== null
+        const hasStarted = m.match_date && new Date(m.match_date) < lockTime
+        const hasResult = m.score_home !== null && m.score_away !== null
+        
+        if (isFilled || hasStarted || hasResult) {
+          count++
+        }
       }
     })
     return count >= 72
-  }, [allPredictionsMap, groupMatches])
+  }, [allPredictionsMap, allMatches])
 
   useEffect(() => {
     fetchData()
@@ -190,16 +199,18 @@ export default function PredictionsPage() {
   // Count predictions per group for badges
   const [predCounts, setPredCounts] = useState({})
   useEffect(() => {
-    // Only count predictions that actually have scores
     const counts = {}
-    const seenMatches = new Set()
+    const lockTime = new Date(Date.now() + 5 * 60 * 1000)
     
-    Object.values(allPredictionsMap).forEach(p => {
-      if (p.score_home !== null && p.score_away !== null && !seenMatches.has(p.match_id)) {
-        seenMatches.add(p.match_id)
-        const match = allMatches.find(m => m.id === p.match_id)
-        if (match && match.cup_group) {
-          counts[match.cup_group] = (counts[match.cup_group] || 0) + 1
+    allMatches.forEach(m => {
+      const p = allPredictionsMap[m.id]
+      const isFilled = p && p.score_home !== null && p.score_away !== null
+      const hasStarted = m.match_date && new Date(m.match_date) < lockTime
+      const hasResult = m.score_home !== null && m.score_away !== null
+      
+      if (isFilled || hasStarted || hasResult) {
+        if (m.cup_group) {
+          counts[m.cup_group] = (counts[m.cup_group] || 0) + 1
         }
       }
     })
