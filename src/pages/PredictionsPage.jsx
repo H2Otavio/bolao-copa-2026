@@ -86,7 +86,7 @@ export default function PredictionsPage() {
   // Scroll to match if URL contains matchId
   useEffect(() => {
     const matchId = new URLSearchParams(location.search).get('matchId')
-    if (matchId && matches.length > 0) {
+    if (matchId && allMatches.length > 0) {
       setTimeout(() => {
         const el = document.getElementById(`match-${matchId}`)
         if (el) {
@@ -96,7 +96,7 @@ export default function PredictionsPage() {
         }
       }, 100)
     }
-  }, [matches, location.search])
+  }, [allMatches, location.search])
 
   const handleSavePrediction = async (matchId, payload) => {
     const { scoreHome, scoreAway, isSimulated, simulatedTeamHome, simulatedTeamAway, advanceOnPenalties } = payload
