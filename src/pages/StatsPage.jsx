@@ -44,27 +44,24 @@ export default function StatsPage() {
         .eq('cup_group', selectedGroup)
         .order('match_number')
 
-      // Get all users in this league
-      const { data: users } = await supabase
+      // Get total users in the entire app
+      const { count } = await supabase
         .from('users')
-        .select('id')
-        .eq('league_id', league.id)
+        .select('*', { count: 'exact', head: true })
 
-      const userIds = (users || []).map(u => u.id)
-      setTotalVoters(userIds.length)
+      setTotalVoters(count || 0)
 
-      if (!matches || matches.length === 0 || userIds.length === 0) {
+      if (!matches || matches.length === 0 || count === 0) {
         setStats([])
         setLoading(false)
         return
       }
 
-      // Get predictions from league users for these matches
+      // Get ALL predictions for these matches
       const matchIds = matches.map(m => m.id)
       const { data: predictions } = await supabase
         .from('predictions')
         .select('*')
-        .in('user_id', userIds)
         .in('match_id', matchIds)
 
       // Aggregate stats per match
@@ -125,13 +122,14 @@ export default function StatsPage() {
     <div className="animate-fade-in">
       <div className="mb-6">
         <h1 className="text-2xl md:text-3xl font-bold mb-1">Odds da Galera</h1>
-        <p className="text-text-secondary">{league.name} · {totalVoters} participantes</p>
+        <p className="text-text-secondary">Estatísticas Globais · {totalVoters} participantes</p>
       </div>
 
       <GroupTabs
         groups={CUP_GROUPS}
         selected={selectedGroup}
         onSelect={setSelectedGroup}
+        knockoutUnlocked={true}
       />
 
       {loading ? (
