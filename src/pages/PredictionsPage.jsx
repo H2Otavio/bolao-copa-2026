@@ -178,7 +178,7 @@ export default function PredictionsPage() {
       }
     }
     fetchCounts()
-  }, [user.id, predictions])
+  }, [user.id, allPredictionsMap])
 
   return (
     <div className="animate-fade-in">
