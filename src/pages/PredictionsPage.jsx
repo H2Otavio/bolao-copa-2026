@@ -44,18 +44,21 @@ export default function PredictionsPage() {
         .eq('user_id', user.id)
 
       const pMap = {}
+      ;(pData || []).forEach(p => {
+        pMap[p.match_id] = p
+      })
+      
       let groupCount = 0
       const groupMatches = new Set(allM.filter(m => m.cup_group && m.cup_group.length === 1).map(m => m.id))
       
-      ;(pData || []).forEach(p => {
-        pMap[p.match_id] = p
+      Object.values(pMap).forEach(p => {
         if (groupMatches.has(p.match_id) && p.score_home !== null && p.score_away !== null) {
           groupCount++
         }
       })
       
       setAllPredictionsMap(pMap)
-      setKnockoutUnlocked(groupCount === 72)
+      setKnockoutUnlocked(groupCount >= 72)
     } catch (err) {
       console.error('Error fetching data:', err)
     } finally {
@@ -169,9 +172,14 @@ export default function PredictionsPage() {
           allMatches.forEach(m => { matchGroupMap[m.id] = m.cup_group })
 
           const counts = {}
+          const seenMatches = new Set()
+          
           data.forEach(p => {
-            const grp = matchGroupMap[p.match_id]
-            if (grp) counts[grp] = (counts[grp] || 0) + 1
+            if (!seenMatches.has(p.match_id)) {
+              seenMatches.add(p.match_id)
+              const grp = matchGroupMap[p.match_id]
+              if (grp) counts[grp] = (counts[grp] || 0) + 1
+            }
           })
           setPredCounts(counts)
         }
