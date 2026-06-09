@@ -11,6 +11,7 @@ import StatsPage from './pages/StatsPage'
 import RulesPage from './pages/RulesPage'
 import AdminPage from './pages/AdminPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
+import ResetPasswordConfirmPage from './pages/ResetPasswordConfirmPage'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -44,6 +45,7 @@ export default function App() {
       <Route path="/" element={<LoginPage />} />
       <Route path="/cadastrar" element={<RegisterPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/reset-password-confirm" element={<ResetPasswordConfirmPage />} />
       <Route path="/admin-login" element={<AdminLoginPage />} />
       
       {/* Rotas de Usuário Comum */}
