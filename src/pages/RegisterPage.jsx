@@ -6,6 +6,7 @@ export default function RegisterPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -20,8 +21,12 @@ export default function RegisterPage() {
 
   const handleRegister = async (e) => {
     e.preventDefault()
-    if (!name.trim() || !email.trim() || !password.trim() || !code.trim()) {
+    if (!name.trim() || !email.trim() || !password.trim() || !code.trim() || !confirmPassword.trim()) {
       setError('Preencha todos os campos.')
+      return
+    }
+    if (password !== confirmPassword) {
+      setError('As senhas não coincidem.')
       return
     }
     setLoading(true)
@@ -92,6 +97,19 @@ export default function RegisterPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 className="input-field"
+                minLength={6}
+                autoComplete="new-password"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2">Confirmar Senha</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                className="input-field"
+                minLength={6}
                 autoComplete="new-password"
               />
             </div>
