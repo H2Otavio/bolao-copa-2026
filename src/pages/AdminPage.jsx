@@ -113,7 +113,7 @@ export default function AdminPage() {
     
     const { data: users } = await supabase
       .from('users')
-      .select('id, username')
+      .select('id, name')
       .eq('league_id', league.id)
       
     if (!users || users.length === 0) {
@@ -334,7 +334,7 @@ export default function AdminPage() {
                     return (
                       <div key={user.id} className="bg-bg-primary rounded-lg p-4 border border-border">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                          <div className="font-medium text-lg">{user.username}</div>
+                          <div className="font-medium text-lg">{user.name}</div>
                           
                           <div className="flex items-center gap-4 text-sm">
                             <div className="flex flex-col items-center">
