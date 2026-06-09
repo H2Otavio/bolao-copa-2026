@@ -68,7 +68,6 @@ export default function RankingPage() {
           let totalPoints = 0
           let exactScores = 0
           let correctResults = 0
-          let bonusPoints = 0
           let totalPredictions = userPreds.length
 
           userPreds.forEach(pred => {
