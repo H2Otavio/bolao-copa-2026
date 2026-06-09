@@ -4,7 +4,7 @@
  */
 
 // Helper to calculate standings from an array of group matches and their predictions
-export function calculateGroupStandings(groupMatches, predictions) {
+export function calculateGroupStandings(groupMatches, predictions, useFallback = true) {
   const teams = {}
 
   // Initialize teams
@@ -21,7 +21,7 @@ export function calculateGroupStandings(groupMatches, predictions) {
     if (pred && pred.score_home !== null && pred.score_away !== null) {
       h = pred.score_home
       a = pred.score_away
-    } else if (m.score_home !== null && m.score_away !== null) {
+    } else if (useFallback && m.score_home !== null && m.score_away !== null) {
       h = m.score_home
       a = m.score_away
     }
@@ -65,7 +65,7 @@ export function calculateGroupStandings(groupMatches, predictions) {
 }
 
 // Generate placements for all groups
-export function getGroupPlacements(allMatches, allPredictions) {
+export function getGroupPlacements(allMatches, allPredictions, useFallback = true) {
   const groupMatches = allMatches.filter(m => m.cup_group && m.cup_group.length === 1)
   const groups = {}
   
@@ -79,7 +79,7 @@ export function getGroupPlacements(allMatches, allPredictions) {
   const thirds = []
 
   Object.keys(groups).forEach(group => {
-    const st = calculateGroupStandings(groups[group], allPredictions)
+    const st = calculateGroupStandings(groups[group], allPredictions, useFallback)
     if (st.length >= 3) {
       firsts[group] = st[0]
       seconds[group] = st[1]
