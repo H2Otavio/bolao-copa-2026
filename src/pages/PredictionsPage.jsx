@@ -216,7 +216,8 @@ export default function PredictionsPage() {
         selected={selectedGroup}
         onSelect={setSelectedGroup}
         predCounts={predCounts}
-        matchesPerGroup={selectedGroup.length > 1 ? 0 : 6} // Mata-mata não tem 6 jogos exatos
+        matchesPerGroup={selectedGroup.length > 1 ? 0 : 6}
+        knockoutUnlocked={knockoutUnlocked}
       />
 
       {loading ? (
