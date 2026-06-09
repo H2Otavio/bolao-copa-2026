@@ -6,6 +6,7 @@ const navItems = [
   { to: '/cronograma', label: 'Calendário', icon: '📅' },
   { to: '/ranking', label: 'Ranking', icon: '🏆' },
   { to: '/estatisticas', label: 'Estatísticas', icon: '📊' },
+  { to: '/regras', label: 'Regras', icon: '📖' },
 ]
 
 export default function Layout({ children }) {

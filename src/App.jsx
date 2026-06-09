@@ -8,6 +8,7 @@ import PredictionsPage from './pages/PredictionsPage'
 import SchedulePage from './pages/SchedulePage'
 import RankingPage from './pages/RankingPage'
 import StatsPage from './pages/StatsPage'
+import RulesPage from './pages/RulesPage'
 import AdminPage from './pages/AdminPage'
 
 function ProtectedRoute({ children }) {
@@ -80,6 +81,16 @@ export default function App() {
           <ProtectedRoute>
             <Layout>
               <StatsPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/regras"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <RulesPage />
             </Layout>
           </ProtectedRoute>
         }

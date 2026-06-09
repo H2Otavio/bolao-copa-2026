@@ -158,8 +158,8 @@ export default function PredictionsPage() {
         score_home: scoreHome === null ? null : parseInt(scoreHome),
         score_away: scoreAway === null ? null : parseInt(scoreAway),
         is_simulated: isSimulated ?? false,
-        simulated_team_home: simulatedTeamHome ?? null,
-        simulated_team_away: simulatedTeamAway ?? null,
+        simulated_team_home: isSimulated ? (simulatedTeamHome ?? null) : (existing ? existing.simulated_team_home : null),
+        simulated_team_away: isSimulated ? (simulatedTeamAway ?? null) : (existing ? existing.simulated_team_away : null),
         advance_on_penalties: advanceOnPenalties ?? null,
         updated_at: new Date().toISOString()
       }

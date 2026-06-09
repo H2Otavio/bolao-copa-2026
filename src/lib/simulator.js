@@ -13,12 +13,20 @@ export function calculateGroupStandings(groupMatches, predictions) {
     if (!teams[m.team_away]) teams[m.team_away] = { id: m.team_away, flag: m.flag_away, points: 0, goalsFor: 0, goalsAgainst: 0, matchesPlayed: 0 }
   })
 
-  // Apply predictions
+  // Apply predictions or fallback to real match results
   groupMatches.forEach(m => {
     const pred = predictions.find(p => p.match_id === m.id)
+    
+    let h = null, a = null
     if (pred && pred.score_home !== null && pred.score_away !== null) {
-      const h = pred.score_home
-      const a = pred.score_away
+      h = pred.score_home
+      a = pred.score_away
+    } else if (m.score_home !== null && m.score_away !== null) {
+      h = m.score_home
+      a = m.score_away
+    }
+
+    if (h !== null && a !== null) {
 
       teams[m.team_home].matchesPlayed++
       teams[m.team_away].matchesPlayed++
@@ -134,11 +142,22 @@ export function generateKnockoutBracket(allMatches, allPredictions) {
 
   // Helper to resolve winner of a match
   const getWinner = (mNum) => {
-    const matchId = allMatches.find(m => m.match_number === mNum)?.id
-    const pred = allPredictions.find(p => p.match_id === matchId)
-    if (!pred || pred.score_home === null || pred.score_away === null) return null
+    const match = allMatches.find(m => m.match_number === mNum)
+    if (!match) return null
     
+    const pred = allPredictions.find(p => p.match_id === match.id)
     const sim = simulatedMatches[mNum]
+    
+    if (!pred || pred.score_home === null || pred.score_away === null) {
+      // Fallback to real match if it has happened
+      if (match.score_home !== null && match.score_away !== null) {
+        if (match.score_home > match.score_away) return { id: match.team_home, flag: match.flag_home }
+        if (match.score_away > match.score_home) return { id: match.team_away, flag: match.flag_away }
+        return { id: match.team_home, flag: match.flag_home } // Fallback for real draw (no penalty data yet)
+      }
+      return null
+    }
+    
     if (pred.score_home > pred.score_away) return { id: sim.team_home, flag: sim.flag_home }
     if (pred.score_away > pred.score_home) return { id: sim.team_away, flag: sim.flag_away }
     
