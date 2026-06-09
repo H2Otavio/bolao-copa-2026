@@ -19,11 +19,15 @@ export default function SchedulePage() {
     fetchMatches()
   }, [])
 
-  // Agrupar jogos por data (considerando o fuso horário local do usuário)
+  // Agrupar jogos por data (forçando o fuso de São Paulo UTC-3)
   const matchesByDate = {}
   matches.forEach(m => {
     const d = new Date(m.match_date)
-    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    const formatter = new Intl.DateTimeFormat('en-CA', { 
+      timeZone: 'America/Sao_Paulo',
+      year: 'numeric', month: '2-digit', day: '2-digit'
+    })
+    const dateStr = formatter.format(d) // 'YYYY-MM-DD' in SP time
     if (!matchesByDate[dateStr]) matchesByDate[dateStr] = []
     matchesByDate[dateStr].push(m)
   })
@@ -67,7 +71,10 @@ export default function SchedulePage() {
   }
 
   const formatTime = (dateStr) => {
-    return new Date(dateStr).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    return new Date(dateStr).toLocaleTimeString('pt-BR', { 
+      timeZone: 'America/Sao_Paulo',
+      hour: '2-digit', minute: '2-digit' 
+    })
   }
 
   const formatSelectedDate = () => {
