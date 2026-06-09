@@ -108,7 +108,7 @@ export function generateKnockoutBracket(allMatches, allPredictions) {
     return null // Not all groups are fully populated/predicted
   }
 
-  // 4. Bracket Mapping (Deterministic 32-team R32)
+  // 4. Bracket Mapping (Dynamic Third-Place Permutations)
   const simulatedMatches = {}
 
   // Function to create a match
@@ -122,22 +122,56 @@ export function generateKnockoutBracket(allMatches, allPredictions) {
     }
   }
 
+  // Dynamic allocator to find a valid 495-permutation match for the 8 best thirds
+  const mapThirds = (thirds) => {
+    // R32 Target groups that play against 3rd place teams
+    const targets = ['A', 'C', 'E', 'G', 'I', 'K', 'B', 'F']
+    const assigned = new Array(8).fill(null)
+    const used = new Array(8).fill(false)
+
+    // Backtracking to find a valid assignment where a 3rd place team does not play its own group winner
+    const backtrack = (targetIndex) => {
+      if (targetIndex === 8) return true // Found valid mapping
+      
+      for (let i = 0; i < 8; i++) {
+        if (!used[i]) {
+          // Rule: 3rd place team cannot play against the winner of its own group
+          if (thirds[i]?.cup_group !== targets[targetIndex]) {
+            assigned[targetIndex] = thirds[i]
+            used[i] = true
+            if (backtrack(targetIndex + 1)) return true
+            used[i] = false
+            assigned[targetIndex] = null
+          }
+        }
+      }
+      return false
+    }
+
+    if (backtrack(0)) {
+      return assigned
+    }
+    return thirds // Fallback (should theoretically never happen with 8 targets and 12 groups)
+  }
+
+  const assignedThirds = mapThirds(bestThirds)
+
   // R32 (Matches 73 to 88)
-  setMatch(73, firsts['A'], bestThirds[0])
+  setMatch(73, firsts['A'], assignedThirds[0])
   setMatch(74, seconds['E'], seconds['F'])
-  setMatch(75, firsts['C'], bestThirds[1])
+  setMatch(75, firsts['C'], assignedThirds[1])
   setMatch(76, firsts['D'], seconds['A'])
-  setMatch(77, firsts['E'], bestThirds[2])
+  setMatch(77, firsts['E'], assignedThirds[2])
   setMatch(78, seconds['G'], seconds['H'])
-  setMatch(79, firsts['G'], bestThirds[3])
+  setMatch(79, firsts['G'], assignedThirds[3])
   setMatch(80, firsts['H'], seconds['B'])
-  setMatch(81, firsts['I'], bestThirds[4])
+  setMatch(81, firsts['I'], assignedThirds[4])
   setMatch(82, seconds['I'], seconds['J'])
-  setMatch(83, firsts['K'], bestThirds[5])
+  setMatch(83, firsts['K'], assignedThirds[5])
   setMatch(84, firsts['J'], seconds['C'])
-  setMatch(85, firsts['B'], bestThirds[6])
+  setMatch(85, firsts['B'], assignedThirds[6])
   setMatch(86, seconds['K'], seconds['L'])
-  setMatch(87, firsts['F'], bestThirds[7])
+  setMatch(87, firsts['F'], assignedThirds[7])
   setMatch(88, firsts['L'], seconds['D'])
 
   // Helper to resolve winner of a match
@@ -153,7 +187,12 @@ export function generateKnockoutBracket(allMatches, allPredictions) {
       if (match.score_home !== null && match.score_away !== null) {
         if (match.score_home > match.score_away) return { id: match.team_home, flag: match.flag_home }
         if (match.score_away > match.score_home) return { id: match.team_away, flag: match.flag_away }
-        return { id: match.team_home, flag: match.flag_home } // Fallback for real draw (no penalty data yet)
+        
+        // Fallback for real draw using advance_on_penalties
+        if (match.advance_on_penalties === match.team_home) return { id: match.team_home, flag: match.flag_home }
+        if (match.advance_on_penalties === match.team_away) return { id: match.team_away, flag: match.flag_away }
+        
+        return { id: match.team_home, flag: match.flag_home } // Emergency fallback if penalty data is missing
       }
       return null
     }

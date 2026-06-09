@@ -146,6 +146,17 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
     <div id={`match-${match.id}`} className={`glass-card p-4 md:p-5 transition-all duration-300 ${
       hasResult ? 'border-accent-green/20' : ''
     } ${saved ? 'ring-2 ring-accent-green/40' : ''}`}>
+      
+      {/* Segunda Chance Warning */}
+      {mismatchWarning && (
+        <div className="mb-4 bg-accent-gold/10 border border-accent-gold/30 rounded-lg p-3 text-center animate-fade-in">
+          <p className="text-xs md:text-sm text-accent-gold font-medium">
+            ⚠️ Os times do seu simulador não chegaram até aqui.<br/>
+            <span className="text-text-muted">Digite um novo palpite para a partida oficial!</span>
+          </p>
+        </div>
+      )}
+
       {/* Date row */}
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs text-text-muted">{formatDate(match.match_date)}</span>
