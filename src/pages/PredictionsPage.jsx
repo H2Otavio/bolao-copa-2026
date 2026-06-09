@@ -19,7 +19,6 @@ export default function PredictionsPage() {
 
   const [allMatches, setAllMatches] = useState([])
   const [allPredictionsMap, setAllPredictionsMap] = useState({})
-  const [knockoutUnlocked, setKnockoutUnlocked] = useState(false)
   const [simulatedBracket, setSimulatedBracket] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState({})
@@ -48,23 +47,25 @@ export default function PredictionsPage() {
         pMap[p.match_id] = p
       })
       
-      let groupCount = 0
-      const groupMatches = new Set(allM.filter(m => m.cup_group && m.cup_group.length === 1).map(m => m.id))
-      
-      Object.values(pMap).forEach(p => {
-        if (groupMatches.has(p.match_id) && p.score_home !== null && p.score_away !== null) {
-          groupCount++
-        }
-      })
-      
       setAllPredictionsMap(pMap)
-      setKnockoutUnlocked(groupCount >= 72)
     } catch (err) {
       console.error('Error fetching data:', err)
     } finally {
       setLoading(false)
     }
   }, [user.id])
+
+  const groupMatches = useMemo(() => new Set(allMatches.filter(m => m.cup_group && m.cup_group.length === 1).map(m => m.id)), [allMatches])
+
+  const knockoutUnlocked = useMemo(() => {
+    let count = 0
+    Object.values(allPredictionsMap).forEach(p => {
+      if (groupMatches.has(p.match_id) && p.score_home !== null && p.score_away !== null) {
+        count++
+      }
+    })
+    return count >= 72
+  }, [allPredictionsMap, groupMatches])
 
   useEffect(() => {
     fetchData()
