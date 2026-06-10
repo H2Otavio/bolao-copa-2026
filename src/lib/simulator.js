@@ -125,7 +125,7 @@ export function generateKnockoutBracket(allMatches, allPredictions) {
   // Dynamic allocator to find a valid 495-permutation match for the 8 best thirds
   const mapThirds = (thirds) => {
     // R32 Target groups that play against 3rd place teams
-    const targets = ['A', 'C', 'E', 'G', 'I', 'K', 'B', 'F']
+    const targets = ['E', 'I', 'A', 'L', 'D', 'G', 'B', 'K']
     const assigned = new Array(8).fill(null)
     const used = new Array(8).fill(false)
 
@@ -157,22 +157,22 @@ export function generateKnockoutBracket(allMatches, allPredictions) {
   const assignedThirds = mapThirds(bestThirds)
 
   // R32 (Matches 73 to 88)
-  setMatch(73, firsts['A'], assignedThirds[0])
-  setMatch(74, seconds['E'], seconds['F'])
-  setMatch(75, firsts['C'], assignedThirds[1])
-  setMatch(76, firsts['D'], seconds['A'])
-  setMatch(77, firsts['E'], assignedThirds[2])
-  setMatch(78, seconds['G'], seconds['H'])
-  setMatch(79, firsts['G'], assignedThirds[3])
-  setMatch(80, firsts['H'], seconds['B'])
-  setMatch(81, firsts['I'], assignedThirds[4])
-  setMatch(82, seconds['I'], seconds['J'])
-  setMatch(83, firsts['K'], assignedThirds[5])
-  setMatch(84, firsts['J'], seconds['C'])
+  setMatch(73, seconds['A'], seconds['B'])
+  setMatch(74, firsts['E'], assignedThirds[0])
+  setMatch(75, firsts['F'], seconds['C'])
+  setMatch(76, firsts['C'], seconds['F'])
+  setMatch(77, firsts['I'], assignedThirds[1])
+  setMatch(78, seconds['E'], seconds['I'])
+  setMatch(79, firsts['A'], assignedThirds[2])
+  setMatch(80, firsts['L'], assignedThirds[3])
+  setMatch(81, firsts['D'], assignedThirds[4])
+  setMatch(82, firsts['G'], assignedThirds[5])
+  setMatch(83, seconds['K'], seconds['L'])
+  setMatch(84, firsts['H'], seconds['J'])
   setMatch(85, firsts['B'], assignedThirds[6])
-  setMatch(86, seconds['K'], seconds['L'])
-  setMatch(87, firsts['F'], assignedThirds[7])
-  setMatch(88, firsts['L'], seconds['D'])
+  setMatch(86, firsts['J'], seconds['H'])
+  setMatch(87, firsts['K'], assignedThirds[7])
+  setMatch(88, seconds['D'], seconds['G'])
 
   // Helper to resolve winner of a match
   const getWinner = (mNum) => {
@@ -208,19 +208,24 @@ export function generateKnockoutBracket(allMatches, allPredictions) {
   }
 
   // R16 (Matches 89 to 96)
-  for (let i = 0; i < 8; i++) {
-    setMatch(89 + i, getWinner(73 + i * 2), getWinner(74 + i * 2))
-  }
+  setMatch(89, getWinner(74), getWinner(77))
+  setMatch(90, getWinner(73), getWinner(75))
+  setMatch(91, getWinner(76), getWinner(78))
+  setMatch(92, getWinner(79), getWinner(80))
+  setMatch(93, getWinner(83), getWinner(84))
+  setMatch(94, getWinner(81), getWinner(82))
+  setMatch(95, getWinner(86), getWinner(88))
+  setMatch(96, getWinner(85), getWinner(87))
 
   // QF (Matches 97 to 100)
-  for (let i = 0; i < 4; i++) {
-    setMatch(97 + i, getWinner(89 + i * 2), getWinner(90 + i * 2))
-  }
+  setMatch(97, getWinner(89), getWinner(90))
+  setMatch(98, getWinner(93), getWinner(94))
+  setMatch(99, getWinner(91), getWinner(92))
+  setMatch(100, getWinner(95), getWinner(96))
 
   // SF (Matches 101 to 102)
-  for (let i = 0; i < 2; i++) {
-    setMatch(101 + i, getWinner(97 + i * 2), getWinner(98 + i * 2))
-  }
+  setMatch(101, getWinner(97), getWinner(98))
+  setMatch(102, getWinner(99), getWinner(100))
 
   // Third Place (Match 103) & Final (Match 104)
   const getLoser = (mNum) => {
