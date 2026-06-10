@@ -264,6 +264,12 @@ export default function StatsPage() {
       ) : (
         <div className="mt-6 animate-slide-up">
           {selectedGroup === 'Mata-Mata' ? (
+            !knockoutStats ? (
+              <div className="glass-card p-12 text-center">
+                <div className="text-5xl mb-4">📈</div>
+                <p className="text-text-muted text-lg">Carregando estatísticas ou nenhum palpite registrado ainda.</p>
+              </div>
+            ) : (
             <div className="space-y-8">
               
               {/* Podium */}
@@ -337,6 +343,7 @@ export default function StatsPage() {
                 )}
               </div>
             </div>
+            )
           ) : (
             <div className="space-y-4">
               {stats.map(match => (
