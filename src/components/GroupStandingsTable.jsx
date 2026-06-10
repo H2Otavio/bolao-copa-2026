@@ -1,6 +1,28 @@
 import { useMemo } from 'react'
 import { calculateGroupStandings } from '../lib/simulator'
 
+// Helper to convert emoji or 2-letter codes to FlagCDN URLs
+const getFlagUrl = (flag) => {
+  if (!flag) return null
+  if (flag.startsWith('http')) return flag
+
+  let code = ''
+  const codePoints = Array.from(flag).map(c => c.codePointAt(0))
+  if (codePoints.length === 2 && codePoints[0] >= 0x1F1E6 && codePoints[0] <= 0x1F1FF) {
+    code = String.fromCharCode(codePoints[0] - 0x1F1E6 + 97) + String.fromCharCode(codePoints[1] - 0x1F1E6 + 97)
+  } else if (flag.length === 2 && /^[A-Za-z]{2}$/.test(flag)) {
+    code = flag.toLowerCase()
+  }
+
+  if (code) {
+    if (code === 'en') code = 'gb-eng'
+    if (code === 'sc') code = 'gb-sct'
+    if (code === 'wa') code = 'gb-wls'
+    return `https://flagcdn.com/w40/${code}.png`
+  }
+  return null
+}
+
 export default function GroupStandingsTable({ groupMatches, allPredictionsMap }) {
   // Compute standings in real-time
   const standings = useMemo(() => {
@@ -40,6 +62,8 @@ export default function GroupStandingsTable({ groupMatches, allPredictionsMap })
                 badgeClass = 'bg-accent-gold/20 text-accent-gold font-bold rounded-full'
               }
 
+              const flagUrl = getFlagUrl(team.flag)
+
               return (
                 <tr key={team.id} className={rowClass}>
                   <td className="px-3 py-2.5 text-center">
@@ -49,7 +73,11 @@ export default function GroupStandingsTable({ groupMatches, allPredictionsMap })
                   </td>
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2">
-                      <img src={team.flag} alt={team.id} className="w-5 h-5 rounded-sm object-cover shadow-sm" />
+                      {flagUrl ? (
+                        <img src={flagUrl} alt={team.id} className="w-5 h-5 rounded-sm object-cover shadow-sm" />
+                      ) : (
+                        <span className="text-lg">{team.flag}</span>
+                      )}
                       <span className="font-semibold text-text-primary">{team.id}</span>
                     </div>
                   </td>
