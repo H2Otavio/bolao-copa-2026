@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { calcScore } from '../lib/scoring'
 import { translateTeam } from '../lib/countries'
+import { parseMatchDate } from '../lib/dateUtils'
 
 export default function MatchCard({ match, prediction, onSave, saving, saved, liveData, simulatedMatch }) {
   const [homeScore, setHomeScore] = useState('')
@@ -10,7 +11,8 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
 
   // Bloqueia 5 minutos antes do início (adiciona 5min ao tempo atual para comparação)
   const lockTime = new Date(Date.now() + 5 * 60 * 1000)
-  const hasStarted = (match.match_date && new Date(match.match_date) < lockTime) || !!liveData
+  const parsedDate = parseMatchDate(match.match_date)
+  const hasStarted = (parsedDate && parsedDate < lockTime) || !!liveData
   const hasResult = match.score_home !== null && match.score_away !== null
 
   // Determine if it's knockout
@@ -134,8 +136,8 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
 
   // Format match date
   const formatDate = (dateStr) => {
-    if (!dateStr) return ''
-    const d = new Date(dateStr)
+    const d = parseMatchDate(dateStr)
+    if (!d) return ''
     return d.toLocaleDateString('pt-BR', { 
       timeZone: 'America/Sao_Paulo',
       day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' 

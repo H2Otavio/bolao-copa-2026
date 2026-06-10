@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { translateTeam } from '../lib/countries'
+import { parseMatchDate } from '../lib/dateUtils'
 
 export default function SchedulePage() {
   const [matches, setMatches] = useState([])
@@ -22,7 +23,8 @@ export default function SchedulePage() {
   // Agrupar jogos por data (forçando o fuso de São Paulo UTC-3)
   const matchesByDate = {}
   matches.forEach(m => {
-    const d = new Date(m.match_date)
+    const d = parseMatchDate(m.match_date)
+    if (!d) return
     const formatter = new Intl.DateTimeFormat('en-CA', { 
       timeZone: 'America/Sao_Paulo',
       year: 'numeric', month: '2-digit', day: '2-digit'
@@ -71,7 +73,9 @@ export default function SchedulePage() {
   }
 
   const formatTime = (dateStr) => {
-    return new Date(dateStr).toLocaleTimeString('pt-BR', { 
+    const d = parseMatchDate(dateStr)
+    if (!d) return ''
+    return d.toLocaleTimeString('pt-BR', { 
       timeZone: 'America/Sao_Paulo',
       hour: '2-digit', minute: '2-digit' 
     })

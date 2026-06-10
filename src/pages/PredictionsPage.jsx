@@ -7,6 +7,7 @@ import MatchCard from '../components/MatchCard'
 import { useLiveScores } from '../lib/api'
 import { generateKnockoutBracket } from '../lib/simulator'
 import GroupStandingsTable from '../components/GroupStandingsTable'
+import { parseMatchDate } from '../lib/dateUtils'
 
 const CUP_GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'R32', 'R16', 'QF', 'SF', '3RD', 'FINAL']
 
@@ -67,7 +68,7 @@ export default function PredictionsPage() {
       if (m.cup_group && m.cup_group.length === 1) {
         const p = allPredictionsMap[m.id]
         const isFilled = p && p.score_home !== null && p.score_away !== null
-        const hasStarted = m.match_date && new Date(m.match_date) < lockTime
+        const hasStarted = m.match_date && parseMatchDate(m.match_date) < lockTime
         const hasResult = m.score_home !== null && m.score_away !== null
         
         if (isFilled || hasStarted || hasResult) {
@@ -206,7 +207,7 @@ export default function PredictionsPage() {
     allMatches.forEach(m => {
       const p = allPredictionsMap[m.id]
       const isFilled = p && p.score_home !== null && p.score_away !== null
-      const hasStarted = m.match_date && new Date(m.match_date) < lockTime
+      const hasStarted = m.match_date && parseMatchDate(m.match_date) < lockTime
       const hasResult = m.score_home !== null && m.score_away !== null
       
       if (isFilled || hasStarted || hasResult) {
