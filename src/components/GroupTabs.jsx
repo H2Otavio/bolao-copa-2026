@@ -66,12 +66,13 @@ export default function GroupTabs({ groups, selected, onSelect, predCounts, matc
       </div>
 
       {/* Nível 2: Sub-guias */}
-      <div
-        ref={scrollRef}
-        className="flex gap-4 overflow-x-auto pt-3 pb-4 px-4 scrollbar-none -mx-4 md:mx-0 md:px-2"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-      >
-        {visibleGroups.map(group => {
+      {!(visibleGroups.length === 1 && visibleGroups[0] === 'Mata-Mata') && (
+        <div
+          ref={scrollRef}
+          className="flex gap-4 overflow-x-auto pt-3 pb-4 px-4 scrollbar-none -mx-4 md:mx-0 md:px-2"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          {visibleGroups.map(group => {
           const isActive = group === selected
           const count = predCounts?.[group] || 0
           
@@ -114,6 +115,7 @@ export default function GroupTabs({ groups, selected, onSelect, predCounts, matc
           )
         })}
       </div>
+      )}
     </div>
   )
 }

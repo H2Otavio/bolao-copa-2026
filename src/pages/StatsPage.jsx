@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import GroupTabs from '../components/GroupTabs'
 import { useLiveScores } from '../lib/api'
 import { translateTeam } from '../lib/countries'
+import { generateKnockoutBracket } from '../lib/simulator'
 
 const CUP_GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'Mata-Mata']
 
@@ -61,14 +62,7 @@ export default function StatsPage() {
       })
 
       if (selectedGroup === 'Mata-Mata') {
-        const knockoutGroups = ['R32', 'R16', 'QF', 'SF', '3RD', 'FINAL']
-        const matches = allMatches.filter(m => knockoutGroups.includes(m.cup_group))
-        const matchIds = matches.map(m => m.id)
-
-        const { data: predictions } = await supabase
-          .from('predictions')
-          .select('*')
-          .in('match_id', matchIds)
+        const { data: predictions } = await supabase.from('predictions').select('*')
 
         const championVotes = {}
         const runnerUpVotes = {}
@@ -81,44 +75,57 @@ export default function StatsPage() {
           map[teamId].votes++
         }
 
-        const resolvePrediction = (p, match) => {
-          let hTeam = p.is_simulated ? p.simulated_team_home : match.team_home
-          let aTeam = p.is_simulated ? p.simulated_team_away : match.team_away
-
-          if (p.score_home !== null && p.score_away !== null) {
-            if (p.score_home > p.score_away) return { winner: hTeam, loser: aTeam }
-            if (p.score_away > p.score_home) return { winner: aTeam, loser: hTeam }
-            if (p.advance_on_penalties === hTeam) return { winner: hTeam, loser: aTeam }
-            if (p.advance_on_penalties === aTeam) return { winner: aTeam, loser: hTeam }
-          }
-          return { winner: null, loser: null }
+        // Group predictions by user to simulate their brackets
+        const predsByUser = {}
+        if (predictions) {
+          predictions.forEach(p => {
+            if (!predsByUser[p.user_id]) predsByUser[p.user_id] = []
+            predsByUser[p.user_id].push(p)
+          })
         }
 
-        (predictions || []).forEach(p => {
-          const m = matches.find(match => match.id === p.match_id)
-          if (!m) return
+        Object.values(predsByUser).forEach(userPreds => {
+          const bracket = generateKnockoutBracket(allMatches, userPreds)
+          if (!bracket) return
 
-          // R32 (Advanced from Groups)
-          if (m.cup_group === 'R32') {
-            let hTeam = p.is_simulated ? p.simulated_team_home : m.team_home
-            let aTeam = p.is_simulated ? p.simulated_team_away : m.team_away
-            if (p.score_home !== null && p.score_away !== null) { // Only count if actually filled
-              incrementVote(advancedVotes, hTeam)
-              incrementVote(advancedVotes, aTeam)
+          // R32 (Advanced from Groups) matches 73 to 88
+          for (let i = 73; i <= 88; i++) {
+            if (bracket[i]) {
+              incrementVote(advancedVotes, bracket[i].team_home)
+              incrementVote(advancedVotes, bracket[i].team_away)
             }
           }
 
           // 3RD Place
-          if (m.cup_group === '3RD') {
-            const { winner } = resolvePrediction(p, m)
-            incrementVote(thirdPlaceVotes, winner)
+          const m103 = bracket[103]
+          const match103Info = allMatches.find(m => m.match_number === 103)
+          const p103 = match103Info ? userPreds.find(p => p.match_id === match103Info.id) : null
+          
+          if (m103 && p103 && p103.score_home !== null && p103.score_away !== null) {
+            let hTeam = m103.team_home
+            let aTeam = m103.team_away
+            if (p103.score_home > p103.score_away) incrementVote(thirdPlaceVotes, hTeam)
+            else if (p103.score_away > p103.score_home) incrementVote(thirdPlaceVotes, aTeam)
+            else {
+              if (p103.advance_on_penalties === hTeam) incrementVote(thirdPlaceVotes, hTeam)
+              else if (p103.advance_on_penalties === aTeam) incrementVote(thirdPlaceVotes, aTeam)
+            }
           }
 
           // FINAL
-          if (m.cup_group === 'FINAL') {
-            const { winner, loser } = resolvePrediction(p, m)
-            incrementVote(championVotes, winner)
-            incrementVote(runnerUpVotes, loser)
+          const m104 = bracket[104]
+          const match104Info = allMatches.find(m => m.match_number === 104)
+          const p104 = match104Info ? userPreds.find(p => p.match_id === match104Info.id) : null
+          
+          if (m104 && p104 && p104.score_home !== null && p104.score_away !== null) {
+            let hTeam = m104.team_home
+            let aTeam = m104.team_away
+            if (p104.score_home > p104.score_away) { incrementVote(championVotes, hTeam); incrementVote(runnerUpVotes, aTeam) }
+            else if (p104.score_away > p104.score_home) { incrementVote(championVotes, aTeam); incrementVote(runnerUpVotes, hTeam) }
+            else {
+              if (p104.advance_on_penalties === hTeam) { incrementVote(championVotes, hTeam); incrementVote(runnerUpVotes, aTeam) }
+              else if (p104.advance_on_penalties === aTeam) { incrementVote(championVotes, aTeam); incrementVote(runnerUpVotes, hTeam) }
+            }
           }
         })
 
