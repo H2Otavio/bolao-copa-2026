@@ -20,7 +20,10 @@ export default function GroupTabs({ groups, selected, onSelect, predCounts, matc
   const handlePhaseChange = (phase) => {
     if (phase === 'groups' && isKnockoutPhase) onSelect('A')
     if (phase === 'knockout' && !isKnockoutPhase) {
-      if (knockoutUnlocked) onSelect('R32')
+      if (knockoutUnlocked) {
+        const firstKnockout = groups.find(g => g.length > 1)
+        if (firstKnockout) onSelect(firstKnockout)
+      }
     }
   }
 
