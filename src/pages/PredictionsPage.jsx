@@ -6,6 +6,7 @@ import GroupTabs from '../components/GroupTabs'
 import MatchCard from '../components/MatchCard'
 import { useLiveScores } from '../lib/api'
 import { generateKnockoutBracket } from '../lib/simulator'
+import GroupStandingsTable from '../components/GroupStandingsTable'
 
 const CUP_GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'R32', 'R16', 'QF', 'SF', '3RD', 'FINAL']
 
@@ -240,6 +241,14 @@ export default function PredictionsPage() {
         </div>
       ) : (
         <div className="space-y-4 mt-6 animate-slide-up">
+          {/* Tabela de Classificação para Fase de Grupos */}
+          {selectedGroup.length === 1 && (
+            <GroupStandingsTable 
+              groupMatches={displayMatches} 
+              allPredictionsMap={allPredictionsMap} 
+            />
+          )}
+
           {displayMatches.map((match) => {
             // Merge live scores
             const live = liveMatches[match.match_number]
