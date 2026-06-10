@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { calculateGroupStandings } from '../lib/simulator'
+import { translateTeam } from '../lib/countries'
 
 // Helper to convert emoji or 2-letter codes to FlagCDN URLs
 const getFlagUrl = (flag) => {
@@ -78,7 +79,7 @@ export default function GroupStandingsTable({ groupMatches, allPredictionsMap })
                       ) : (
                         <span className="text-lg">{team.flag}</span>
                       )}
-                      <span className="font-semibold text-text-primary">{team.id}</span>
+                      <span className="font-semibold text-text-primary">{translateTeam(team.id)}</span>
                     </div>
                   </td>
                   <td className="px-3 py-2.5 text-center font-bold text-text-primary">
