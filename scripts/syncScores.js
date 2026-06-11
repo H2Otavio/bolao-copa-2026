@@ -59,14 +59,12 @@ async function syncScores() {
         // Check if we actually need to update (to avoid unnecessary DB writes)
         const needsUpdate = 
           match.score_home !== scoreHome || 
-          match.score_away !== scoreAway ||
-          match.finished !== isFinished;
+          match.score_away !== scoreAway;
 
         if (needsUpdate) {
           const updatePayload = {
             score_home: scoreHome,
-            score_away: scoreAway,
-            finished: isFinished
+            score_away: scoreAway
           };
 
           const { error: updateError } = await supabase
