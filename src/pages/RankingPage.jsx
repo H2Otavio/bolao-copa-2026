@@ -10,16 +10,23 @@ export default function RankingPage() {
   const { liveMatches } = useLiveScores()
   const [ranking, setRanking] = useState([])
   const [loading, setLoading] = useState(true)
+  const [selectedLeague, setSelectedLeague] = useState(league.id)
+  const [leaguesList, setLeaguesList] = useState([])
 
   useEffect(() => {
     async function fetchRanking() {
       setLoading(true)
       try {
-        // Get all users in this league
-        const { data: users } = await supabase
-          .from('users')
-          .select('*')
-          .eq('league_id', league.id)
+        // Fetch all leagues
+        const { data: allLeagues } = await supabase.from('leagues').select('*')
+        setLeaguesList(allLeagues || [])
+
+        // Get users depending on selectedLeague
+        let usersQuery = supabase.from('users').select('*')
+        if (selectedLeague !== 'all') {
+          usersQuery = usersQuery.eq('league_id', selectedLeague)
+        }
+        const { data: users } = await usersQuery
 
         // Get all matches
         const { data: matches } = await supabase
@@ -103,7 +110,7 @@ export default function RankingPage() {
       }
     }
     fetchRanking()
-  }, [league.id, liveMatches])
+  }, [selectedLeague, liveMatches])
 
   const getMedalEmoji = (pos) => {
     if (pos === 0) return '🥇'
@@ -114,9 +121,23 @@ export default function RankingPage() {
 
   return (
     <div className="animate-fade-in">
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold mb-1">Ranking</h1>
-        <p className="text-text-secondary">{league.name}</p>
+      <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold mb-1">Ranking</h1>
+          <p className="text-text-secondary">Acompanhe a pontuação</p>
+        </div>
+        <select
+          value={selectedLeague}
+          onChange={(e) => setSelectedLeague(e.target.value)}
+          className="input-field w-full md:w-auto md:min-w-[200px] py-2 px-3 text-sm cursor-pointer"
+        >
+          <option value="all">🏆 Ranking Global (Todos)</option>
+          {leaguesList.map(l => (
+            <option key={l.id} value={l.id}>
+              {l.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       {loading ? (

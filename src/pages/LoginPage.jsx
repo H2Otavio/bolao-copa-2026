@@ -45,7 +45,7 @@ export default function LoginPage() {
       <div className="relative z-10 w-full max-w-md animate-fade-in">
         {/* Logo / Title */}
         <div className="text-center mb-10">
-          <div className="text-6xl mb-4">⚽</div>
+          <img src="/trionda.png" alt="Bolão 2026" className="w-20 h-20 mx-auto mb-4 object-contain drop-shadow-xl" />
           <h1 className="text-4xl font-black gradient-text mb-2">Bolão Copa 2026</h1>
           <p className="text-text-secondary">Faça seus palpites e desafie seus amigos!</p>
         </div>
