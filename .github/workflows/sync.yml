@@ -25,7 +25,6 @@ jobs:
         
       - name: Run sync script
         env:
-          API_SPORTS_KEY: ${{ secrets.API_SPORTS_KEY }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: node scripts/syncScores.js

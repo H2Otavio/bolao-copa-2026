@@ -1,29 +1,21 @@
 import { createClient } from '@supabase/supabase-js';
 
-const API_SPORTS_KEY = process.env.API_SPORTS_KEY;
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY;
 
-if (!API_SPORTS_KEY || !SUPABASE_URL || !SUPABASE_KEY) {
-  console.error("Missing environment variables. Make sure API_SPORTS_KEY, VITE_SUPABASE_URL, and VITE_SUPABASE_ANON_KEY are set.");
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  console.error("Missing environment variables. Make sure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set.");
   process.exit(1);
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function syncScores() {
-  console.log("Starting score synchronization with API-Sports...");
+  console.log("Starting score synchronization with worldcup26.ir...");
 
-  // API-Sports league 1 is World Cup, season 2026
-  // We fetch ALL matches for the tournament (104 matches) at once.
-  // This costs exactly 1 request per run, avoiding timezone/date edge cases.
-  const url = `https://v3.football.api-sports.io/fixtures?league=1&season=2026`;
+  const url = `https://worldcup26.ir/get/games`;
 
-  const response = await fetch(url, {
-    headers: {
-      'x-apisports-key': API_SPORTS_KEY
-    }
-  });
+  const response = await fetch(url);
 
   if (!response.ok) {
     console.error(`API Error: ${response.status}`);
@@ -32,10 +24,10 @@ async function syncScores() {
     process.exit(1);
   }
 
-  const data = await response.json();
-  const fixtures = data.response || [];
+  const json = await response.json();
+  const fixtures = Array.isArray(json.data) ? json.data : (Array.isArray(json) ? json : []);
 
-  console.log(`Found ${fixtures.length} matches in the tournament.`);
+  console.log(`Found ${fixtures.length} matches in the API.`);
 
   if (fixtures.length === 0) return;
 
@@ -46,59 +38,35 @@ async function syncScores() {
     process.exit(1);
   }
   
-  // Mapping API names to our names if necessary, though mostly identical in English
-  const nameMap = {
-    "United States": "USA",
-    "Korea Republic": "South Korea",
-    "Korea DPR": "North Korea"
-  };
-
   let updatedCount = 0;
 
-  for (const fixtureObj of fixtures) {
-    const fixture = fixtureObj.fixture;
-    const teams = fixtureObj.teams;
-    const goals = fixtureObj.goals;
-    const score = fixtureObj.score;
+  for (const fixture of fixtures) {
+    // API match id usually maps directly to our match_number
+    const apiId = fixture.id || fixture.match_number;
+    const isFinished = fixture.finished === "TRUE" || fixture.finished === true;
     
-    // Statuses that mean the match is finished:
-    // 'FT' (Full Time), 'AET' (After Extra Time), 'PEN' (Penalties)
-    const status = fixture.status.short;
-    if (['FT', 'AET', 'PEN'].includes(status)) {
-      
-      const homeTeamAPI = teams.home.name;
-      const awayTeamAPI = teams.away.name;
-      
-      const homeTeam = nameMap[homeTeamAPI] || homeTeamAPI;
-      const awayTeam = nameMap[awayTeamAPI] || awayTeamAPI;
+    // Convert scores to numbers safely
+    const scoreHome = parseInt(fixture.home_score, 10);
+    const scoreAway = parseInt(fixture.away_score, 10);
 
-      // Find match in DB by comparing team names
-      const match = dbMatches.find(m => 
-        m.team_home.toLowerCase() === homeTeam.toLowerCase() && 
-        m.team_away.toLowerCase() === awayTeam.toLowerCase()
-      );
+    // Only process if the match has started (scores are not null and not empty)
+    if (!isNaN(scoreHome) && !isNaN(scoreAway)) {
+      
+      const match = dbMatches.find(m => m.match_number === apiId || (m.team_home === fixture.home_team_en && m.team_away === fixture.away_team_en));
 
       if (match) {
         // Check if we actually need to update (to avoid unnecessary DB writes)
         const needsUpdate = 
-          match.score_home !== goals.home || 
-          match.score_away !== goals.away ||
-          (status === 'PEN' && score.penalty.home !== null && score.penalty.away !== null && !match.advance_on_penalties);
+          match.score_home !== scoreHome || 
+          match.score_away !== scoreAway ||
+          match.finished !== isFinished;
 
         if (needsUpdate) {
           const updatePayload = {
-            score_home: goals.home,
-            score_away: goals.away
+            score_home: scoreHome,
+            score_away: scoreAway,
+            finished: isFinished
           };
-
-          // Handle penalties if applicable
-          if (status === 'PEN' && score.penalty.home !== null && score.penalty.away !== null) {
-            if (score.penalty.home > score.penalty.away) {
-              updatePayload.advance_on_penalties = match.team_home;
-            } else {
-              updatePayload.advance_on_penalties = match.team_away;
-            }
-          }
 
           const { error: updateError } = await supabase
             .from('matches')
@@ -106,9 +74,9 @@ async function syncScores() {
             .eq('id', match.id);
 
           if (updateError) {
-            console.error(`Failed to update ${homeTeam} vs ${awayTeam}:`, updateError);
+            console.error(`Failed to update Match ${match.match_number} (${match.team_home} vs ${match.team_away}):`, updateError);
           } else {
-            console.log(`Successfully updated ${homeTeam} vs ${awayTeam} (${goals.home} - ${goals.away}) in database.`);
+            console.log(`Successfully updated Match ${match.match_number} (${match.team_home} vs ${match.team_away}) to ${scoreHome} - ${scoreAway}. Finished: ${isFinished}`);
             updatedCount++;
           }
         }
