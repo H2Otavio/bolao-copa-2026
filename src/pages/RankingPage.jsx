@@ -100,7 +100,6 @@ export default function RankingPage() {
             if (score.exactBothPoints > 0) exactScores++
             if (score.winnerPoints > 0) correctResults++
           })
-          })
           
           const avgOrder = totalPredictions > 0 ? sumOrderRank / totalPredictions : 999999
 
