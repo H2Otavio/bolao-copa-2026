@@ -49,8 +49,8 @@ async function syncScores() {
     const scoreHome = parseInt(fixture.home_score, 10);
     const scoreAway = parseInt(fixture.away_score, 10);
 
-    // Only process if the match has started (scores are not null and not empty)
-    if (!isNaN(scoreHome) && !isNaN(scoreAway)) {
+    // Only process if the match has started
+    if (fixture.time_elapsed !== 'notstarted' && !isNaN(scoreHome) && !isNaN(scoreAway)) {
       
       const match = dbMatches.find(m => m.match_number === apiId || (m.team_home === fixture.home_team_en && m.team_away === fixture.away_team_en));
 
