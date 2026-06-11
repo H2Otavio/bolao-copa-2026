@@ -53,7 +53,7 @@ async function syncScores() {
     // Only process if the match has started
     if (fixture.time_elapsed !== 'notstarted' && !isNaN(scoreHome) && !isNaN(scoreAway)) {
       
-      const match = dbMatches.find(m => m.match_number === apiId || (m.team_home === fixture.home_team_en && m.team_away === fixture.away_team_en));
+      const match = dbMatches.find(m => m.match_number === parseInt(apiId, 10) || (m.team_home === fixture.home_team_en && m.team_away === fixture.away_team_en));
 
       if (match) {
         // Check if we actually need to update (to avoid unnecessary DB writes)
