@@ -95,15 +95,46 @@ export function AuthProvider({ children }) {
     }
 
     // 3. Cadastra na Autenticação Oficial do Supabase
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    let authData = null
+    const { data: signUpData, error: authError } = await supabase.auth.signUp({
       email: email.trim(),
       password: password
     })
 
-    if (authError) throw new Error('Erro ao registrar e-mail: ' + authError.message)
+    if (authError) {
+      if (authError.message.toLowerCase().includes('already registered') || authError.status === 400) {
+        // Tentativa de recuperação: a pessoa pode ter travado no erro antigo e a conta Auth foi criada sem o Perfil.
+        // Vamos tentar logar com a senha que ela acabou de digitar.
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password: password
+        })
+        
+        if (signInError) {
+          throw new Error('Este e-mail já está em uso. Se for o seu, tente fazer login ou recuperar a senha.')
+        } else {
+          // Logou com sucesso, significa que a conta existe. Vamos checar se já tem perfil.
+          const { data: existingProfile } = await supabase
+            .from('users')
+            .select('id')
+            .eq('auth_id', signInData.user.id)
+            .maybeSingle()
+            
+          if (existingProfile) {
+            throw new Error('Este e-mail já possui uma conta ativa. Por favor, faça login.')
+          }
+          // Se não tem perfil, vamos usar o signInData para continuar e criar o perfil abaixo!
+          authData = signInData
+        }
+      } else {
+        throw new Error('Erro ao registrar e-mail: ' + authError.message)
+      }
+    } else {
+      authData = signUpData
+    }
 
     // Se tiver confirmação de e-mail ativada, authData.user existirá mas session será nula
-    if (!authData.user) throw new Error('Erro inesperado ao criar conta.')
+    if (!authData || !authData.user) throw new Error('Erro inesperado ao criar conta.')
 
     // 4. Salva na nossa tabela de usuários
     const { data: userData, error: createError } = await supabase
