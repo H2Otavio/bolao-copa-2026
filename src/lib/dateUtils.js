@@ -1,7 +1,7 @@
 export function parseMatchDate(dateStr) {
   if (!dateStr) return null
   const d = new Date(dateStr)
-  // The API data timezone is 4 hours behind Brasilia time, so we adjust it +4h
-  d.setHours(d.getHours() + 4)
+  // O fuso horário salvo no banco em UTC precisa de +6h para bater com o horário de Brasília (ex: 13:00 UTC -> 16:00 BRT)
+  d.setHours(d.getHours() + 6)
   return d
 }
