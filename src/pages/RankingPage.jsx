@@ -11,15 +11,11 @@ export default function RankingPage() {
   const [ranking, setRanking] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedLeague, setSelectedLeague] = useState(league.id)
-  const [leaguesList, setLeaguesList] = useState([])
 
   useEffect(() => {
     async function fetchRanking() {
       setLoading(true)
       try {
-        // Fetch all leagues
-        const { data: allLeagues } = await supabase.from('leagues').select('*')
-        setLeaguesList(allLeagues || [])
 
         // Get users depending on selectedLeague
         let usersQuery = supabase.from('users').select('*')
@@ -33,12 +29,26 @@ export default function RankingPage() {
           .from('matches')
           .select('*')
 
-        // Get all predictions for users in this league
         const userIds = (users || []).map(u => u.id)
         const { data: predictions } = await supabase
           .from('predictions')
           .select('*')
           .in('user_id', userIds)
+
+        // Calcula o Order Rank de cada palpite
+        const matchPredictions = {}
+        ;(predictions || []).forEach(p => {
+          if (!matchPredictions[p.match_id]) matchPredictions[p.match_id] = []
+          matchPredictions[p.match_id].push(p)
+        })
+
+        Object.values(matchPredictions).forEach(matchPreds => {
+          // Ordena pela data de última atualização (mais antigos primeiro)
+          matchPreds.sort((a, b) => new Date(a.updated_at) - new Date(b.updated_at))
+          matchPreds.forEach((p, index) => {
+            p.orderRank = index + 1 // 1 para o primeiro a votar, 2 para o segundo...
+          })
+        })
 
         // Build match map and merge LIVE SCORES
         const matchMap = {}
@@ -76,8 +86,12 @@ export default function RankingPage() {
           let exactScores = 0
           let correctResults = 0
           let totalPredictions = userPreds.length
+          let sumOrderRank = 0
 
           userPreds.forEach(pred => {
+            if (pred.orderRank) {
+              sumOrderRank += pred.orderRank
+            }
             const match = matchMap[pred.match_id]
             if (!match || match.score_home === null || match.score_away === null) return
 
@@ -86,12 +100,17 @@ export default function RankingPage() {
             if (score.exactBothPoints > 0) exactScores++
             if (score.winnerPoints > 0) correctResults++
           })
+          })
+          
+          const avgOrder = totalPredictions > 0 ? sumOrderRank / totalPredictions : 999999
+
           return {
             ...u,
             totalPoints,
             exactScores,
             correctResults,
             totalPredictions,
+            avgOrder
           }
         })
 
@@ -99,7 +118,9 @@ export default function RankingPage() {
         userScores.sort((a, b) => {
           if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints
           if (b.exactScores !== a.exactScores) return b.exactScores - a.exactScores
-          return b.correctResults - a.correctResults
+          if (b.correctResults !== a.correctResults) return b.correctResults - a.correctResults
+          // 4º Critério: Menor Média de Ordem vence o desempate
+          return a.avgOrder - b.avgOrder
         })
 
         setRanking(userScores)
@@ -131,12 +152,8 @@ export default function RankingPage() {
           onChange={(e) => setSelectedLeague(e.target.value)}
           className="input-field w-full md:w-auto md:min-w-[200px] py-2 px-3 text-sm cursor-pointer"
         >
-          <option value="all">🏆 Ranking Global (Todos)</option>
-          {leaguesList.map(l => (
-            <option key={l.id} value={l.id}>
-              {l.name}
-            </option>
-          ))}
+          <option value={league.id}>{league.name}</option>
+          <option value="all">🏆 Ranking Global</option>
         </select>
       </div>
 
