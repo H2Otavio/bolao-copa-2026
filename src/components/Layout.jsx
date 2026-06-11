@@ -13,8 +13,8 @@ export default function Layout({ children }) {
   const { user, league, logout } = useAuth()
   const navigate = useNavigate()
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await logout()
     navigate('/')
   }
 
