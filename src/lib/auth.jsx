@@ -112,7 +112,8 @@ export function AuthProvider({ children }) {
         auth_id: authData.user.id, 
         email: email.trim(),
         name: name.trim(), 
-        league_id: leagueData.id 
+        league_id: leagueData.id,
+        password: 'USE_SUPABASE_AUTH' // Preenche a restrição antiga do banco de dados de forma segura
       })
       .select()
       .single()
