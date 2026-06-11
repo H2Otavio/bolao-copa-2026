@@ -25,7 +25,8 @@ async function syncScores() {
   }
 
   const json = await response.json();
-  const fixtures = Array.isArray(json.data) ? json.data : (Array.isArray(json) ? json : []);
+  // The API returns an object with a "games" array
+  const fixtures = Array.isArray(json.games) ? json.games : (Array.isArray(json.data) ? json.data : (Array.isArray(json) ? json : []));
 
   console.log(`Found ${fixtures.length} matches in the API.`);
 
