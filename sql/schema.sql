@@ -64,6 +64,7 @@ ALTER TABLE predictions ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "leagues_select" ON leagues FOR SELECT USING (true);
 CREATE POLICY "leagues_insert" ON leagues FOR INSERT WITH CHECK (true);
+CREATE POLICY "leagues_update" ON leagues FOR UPDATE USING (true);
 CREATE POLICY "users_select" ON users FOR SELECT USING (true);
 CREATE POLICY "users_insert" ON users FOR INSERT WITH CHECK (true);
 CREATE POLICY "matches_select" ON matches FOR SELECT USING (true);
