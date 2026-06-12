@@ -152,7 +152,9 @@ export default function RankingPage() {
           className="input-field w-full md:w-auto md:min-w-[200px] py-2 px-3 text-sm cursor-pointer"
         >
           <option value={league.id}>{league.name}</option>
-          <option value="all">🏆 Ranking Global</option>
+          {league.can_view_global_ranking && (
+            <option value="all">🏆 Ranking Global</option>
+          )}
         </select>
       </div>
 

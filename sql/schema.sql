@@ -8,8 +8,9 @@ CREATE TABLE leagues (
   id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name        TEXT NOT NULL,
   code        TEXT NOT NULL UNIQUE,
-  admin_name  TEXT NOT NULL,
-  created_at  TIMESTAMPTZ DEFAULT now()
+  admin_name                TEXT NOT NULL,
+  can_view_global_ranking   BOOLEAN DEFAULT false,
+  created_at                TIMESTAMPTZ DEFAULT now()
 );
 
 -- 2. USERS (Participantes)

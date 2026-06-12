@@ -95,10 +95,26 @@ export default function AdminPage() {
     if (error) {
       alert('Erro ao criar liga: ' + error.message)
     } else {
-      setLeagues([{ ...data, userCount: 0 }, ...leagues])
+      setLeagues([{ ...data, userCount: 0, can_view_global_ranking: false }, ...leagues])
       setNewLeagueName('')
     }
     setCreating(false)
+  }
+
+  const handleToggleGlobalRanking = async (leagueId, currentValue) => {
+    const newValue = !currentValue
+    setLeagues(prev => prev.map(l => l.id === leagueId ? { ...l, can_view_global_ranking: newValue } : l))
+    
+    const { error } = await supabase
+      .from('leagues')
+      .update({ can_view_global_ranking: newValue })
+      .eq('id', leagueId)
+
+    if (error) {
+      // Revert if error
+      setLeagues(prev => prev.map(l => l.id === leagueId ? { ...l, can_view_global_ranking: currentValue } : l))
+      alert('Erro ao atualizar permissão: ' + error.message)
+    }
   }
 
   const copyCode = (code) => {
@@ -267,6 +283,7 @@ export default function AdminPage() {
                       <th className="pb-2 font-medium">Nome</th>
                       <th className="pb-2 font-medium text-center">Usuários</th>
                       <th className="pb-2 font-medium">Código</th>
+                      <th className="pb-2 font-medium text-center">Ranking Global</th>
                       <th className="pb-2 font-medium text-right">Ação</th>
                     </tr>
                   </thead>
@@ -284,6 +301,21 @@ export default function AdminPage() {
                           >
                             <span className="font-mono tracking-wider">{league.code}</span>
                             <span>{copiedCode === league.code ? '✅' : '📋'}</span>
+                          </button>
+                        </td>
+                        <td className="py-3 text-center">
+                          <button
+                            onClick={() => handleToggleGlobalRanking(league.id, league.can_view_global_ranking)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                              league.can_view_global_ranking ? 'bg-accent-green' : 'bg-bg-primary border border-border'
+                            }`}
+                            title={league.can_view_global_ranking ? "Desativar Ranking Global" : "Ativar Ranking Global"}
+                          >
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                league.can_view_global_ranking ? 'translate-x-6' : 'translate-x-1'
+                              }`}
+                            />
                           </button>
                         </td>
                         <td className="py-3 text-right">
