@@ -7,8 +7,16 @@ import { parseMatchDate } from '../lib/dateUtils'
 export default function SchedulePage() {
   const [matches, setMatches] = useState([])
   const [loading, setLoading] = useState(true)
-  const [selectedDate, setSelectedDate] = useState('2026-06-11') // Jogo de Abertura
-  const [currentMonth, setCurrentMonth] = useState(5) // 5 = Junho
+  const today = new Date()
+  const brtFormatter = new Intl.DateTimeFormat('en-CA', { 
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric', month: '2-digit', day: '2-digit'
+  })
+  const todayStr = brtFormatter.format(today)
+  const isCupTime = todayStr.startsWith('2026-06') || todayStr.startsWith('2026-07')
+
+  const [selectedDate, setSelectedDate] = useState(isCupTime ? todayStr : '2026-06-11')
+  const [currentMonth, setCurrentMonth] = useState(isCupTime ? parseInt(todayStr.split('-')[1]) - 1 : 5)
   const navigate = useNavigate()
 
   useEffect(() => {
