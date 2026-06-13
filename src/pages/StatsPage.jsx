@@ -62,7 +62,7 @@ export default function StatsPage() {
       })
 
       if (selectedGroup === 'Mata-Mata') {
-        const { data: predictions } = await supabase.from('predictions').select('*')
+        const { data: predictions } = await supabase.from('predictions').select('user_id, match_id, score_home, score_away, advance_on_penalties')
 
         const championVotes = {}
         const runnerUpVotes = {}
@@ -168,7 +168,7 @@ export default function StatsPage() {
         const matchIds = matches.map(m => m.id)
         const { data: predictions } = await supabase
           .from('predictions')
-          .select('*')
+          .select('match_id, score_home, score_away')
           .in('match_id', matchIds)
 
         const matchStats = matches.map(match => {

@@ -17,23 +17,48 @@ export default function RankingPage() {
       setLoading(true)
       try {
 
-        // Get users depending on selectedLeague
-        let usersQuery = supabase.from('users').select('*')
-        if (selectedLeague !== 'all') {
-          usersQuery = usersQuery.eq('league_id', selectedLeague)
+        let users, matches, predictions
+        const cacheKey = `ranking_data_${selectedLeague}`
+        const cachedData = sessionStorage.getItem(cacheKey)
+        let useCache = false
+
+        if (cachedData) {
+          const parsed = JSON.parse(cachedData)
+          if (Date.now() - parsed.timestamp < 5 * 60 * 1000) {
+            users = parsed.users
+            matches = parsed.matches
+            predictions = parsed.predictions
+            useCache = true
+          }
         }
-        const { data: users } = await usersQuery
 
-        // Get all matches
-        const { data: matches } = await supabase
-          .from('matches')
-          .select('*')
+        if (!useCache) {
+          let usersQuery = supabase.from('users').select('id, name, league_id')
+          if (selectedLeague !== 'all') {
+            usersQuery = usersQuery.eq('league_id', selectedLeague)
+          }
+          const { data: fetchedUsers } = await usersQuery
+          users = fetchedUsers
 
-        const userIds = (users || []).map(u => u.id)
-        const { data: predictions } = await supabase
-          .from('predictions')
-          .select('*')
-          .in('user_id', userIds)
+          const { data: fetchedMatches } = await supabase
+            .from('matches')
+            .select('*')
+          matches = fetchedMatches
+
+          const userIds = (users || []).map(u => u.id)
+          const { data: fetchedPredictions } = await supabase
+            .from('predictions')
+            .select('id, user_id, match_id, score_home, score_away, is_simulated, simulated_team_home, simulated_team_away, updated_at')
+            .in('user_id', userIds)
+          predictions = fetchedPredictions
+
+          sessionStorage.setItem(cacheKey, JSON.stringify({
+            timestamp: Date.now(),
+            users,
+            matches,
+            predictions
+          }))
+        }
 
         // Calcula o Order Rank de cada palpite
         const matchPredictions = {}
