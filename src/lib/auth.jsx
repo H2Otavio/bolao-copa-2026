@@ -31,13 +31,13 @@ export function AuthProvider({ children }) {
       }
       
       // Carrega sessão de admin (continua customizada pois é local/separada)
-      const storedAdmin = localStorage.getItem('bolao_admin_session')
-      if (storedAdmin) {
-        try {
+      try {
+        const storedAdmin = localStorage.getItem('bolao_admin_session')
+        if (storedAdmin) {
           setAdminUser(JSON.parse(storedAdmin))
-        } catch (e) {
-          localStorage.removeItem('bolao_admin_session')
         }
+      } catch (e) {
+        try { localStorage.removeItem('bolao_admin_session') } catch(err) {}
       }
       
       setLoading(false)
@@ -216,13 +216,17 @@ export function AuthProvider({ children }) {
       throw new Error('Usuário ou senha inválidos.')
     }
 
-    localStorage.setItem('bolao_admin_session', JSON.stringify(admin))
+    try {
+      localStorage.setItem('bolao_admin_session', JSON.stringify(admin))
+    } catch(e) {}
     setAdminUser(admin)
     return admin
   }
 
   const adminLogout = () => {
-    localStorage.removeItem('bolao_admin_session')
+    try {
+      localStorage.removeItem('bolao_admin_session')
+    } catch(e) {}
     setAdminUser(null)
   }
 

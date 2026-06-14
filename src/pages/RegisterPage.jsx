@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 
@@ -14,10 +14,11 @@ export default function RegisterPage() {
   const { register, user } = useAuth()
 
   // If already logged in, redirect
-  if (user) {
-    navigate('/palpites', { replace: true })
-    return null
-  }
+  useEffect(() => {
+    if (user) {
+      navigate('/palpites', { replace: true })
+    }
+  }, [user, navigate])
 
   const handleRegister = async (e) => {
     e.preventDefault()
