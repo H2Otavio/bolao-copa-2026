@@ -17,6 +17,23 @@ export default function RankingPage() {
       setLoading(true)
       try {
 
+        if (selectedLeague === 'all') {
+          // Busca o ranking global pré-calculado no backend
+          const { data: cacheRow } = await supabase
+            .from('app_cache')
+            .select('value')
+            .eq('key', 'global_ranking')
+            .maybeSingle()
+
+          if (cacheRow && cacheRow.value) {
+            setRanking(cacheRow.value)
+          } else {
+            setRanking([])
+          }
+          setLoading(false)
+          return
+        }
+
         let users, matches, predictions
         const cacheKey = `ranking_data_${selectedLeague}`
         const cachedData = sessionStorage.getItem(cacheKey)
@@ -33,11 +50,7 @@ export default function RankingPage() {
         }
 
         if (!useCache) {
-          let usersQuery = supabase.from('users').select('id, name, league_id')
-          if (selectedLeague !== 'all') {
-            usersQuery = usersQuery.eq('league_id', selectedLeague)
-          }
-          const { data: fetchedUsers } = await usersQuery
+          const { data: fetchedUsers } = await supabase.from('users').select('id, name, league_id').eq('league_id', selectedLeague)
           users = fetchedUsers
 
           const { data: fetchedMatches } = await supabase
@@ -46,11 +59,16 @@ export default function RankingPage() {
           matches = fetchedMatches
 
           const userIds = (users || []).map(u => u.id)
-          const { data: fetchedPredictions } = await supabase
-            .from('predictions')
-            .select('id, user_id, match_id, score_home, score_away, is_simulated, simulated_team_home, simulated_team_away, updated_at')
-            .in('user_id', userIds)
-          predictions = fetchedPredictions
+          
+          if (userIds.length > 0) {
+            const { data: fetchedPredictions } = await supabase
+              .from('predictions')
+              .select('id, user_id, match_id, score_home, score_away, is_simulated, simulated_team_home, simulated_team_away, updated_at')
+              .in('user_id', userIds)
+            predictions = fetchedPredictions
+          } else {
+            predictions = []
+          }
 
           sessionStorage.setItem(cacheKey, JSON.stringify({
             timestamp: Date.now(),

@@ -42,136 +42,41 @@ export default function StatsPage() {
     setKnockoutStats(null)
 
     try {
-      // Get total users in the entire app
-      const { count } = await supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true })
-      setTotalVoters(count || 0)
-
-      if (count === 0) {
+      // 1. Fetch the cached stats map from app_cache
+      const { data: cacheRow } = await supabase
+        .from('app_cache')
+        .select('value')
+        .eq('key', 'global_stats')
+        .maybeSingle()
+        
+      if (!cacheRow || !cacheRow.value) {
         setLoading(false)
         return
       }
 
-      // Fetch all matches to build flagMap and resolve stats
-      const { data: allMatches } = await supabase.from('matches').select('*').order('match_number')
-      const flagMap = {}
-      allMatches.forEach(m => {
-        if (m.team_home && m.flag_home) flagMap[m.team_home] = m.flag_home
-        if (m.team_away && m.flag_away) flagMap[m.team_away] = m.flag_away
-      })
+      const cachedStats = cacheRow.value
+      
+      // Update total voters based on the cached knockout stats or a default
+      if (cachedStats['Mata-Mata'] && cachedStats['Mata-Mata'].totalVoters) {
+        setTotalVoters(cachedStats['Mata-Mata'].totalVoters)
+      } else {
+        // Fallback: get total users count
+        const { count } = await supabase.from('users').select('*', { count: 'exact', head: true })
+        setTotalVoters(count || 0)
+      }
 
       if (selectedGroup === 'Mata-Mata') {
-        const { data: predictions } = await supabase.from('predictions').select('user_id, match_id, score_home, score_away, advance_on_penalties')
-
-        const championVotes = {}
-        const runnerUpVotes = {}
-        const thirdPlaceVotes = {}
-        const advancedVotes = {}
-
-        const incrementVote = (map, teamId) => {
-          if (!teamId || teamId.length > 3) return // Ignore placeholders
-          if (!map[teamId]) map[teamId] = { id: teamId, votes: 0, flag: flagMap[teamId] }
-          map[teamId].votes++
-        }
-
-        // Group predictions by user to simulate their brackets
-        const predsByUser = {}
-        if (predictions) {
-          predictions.forEach(p => {
-            if (!predsByUser[p.user_id]) predsByUser[p.user_id] = []
-            predsByUser[p.user_id].push(p)
-          })
-        }
-
-        Object.values(predsByUser).forEach(userPreds => {
-          const bracket = generateKnockoutBracket(allMatches, userPreds)
-          if (!bracket) return
-
-          // R32 (Advanced from Groups) matches 73 to 88
-          for (let i = 73; i <= 88; i++) {
-            if (bracket[i]) {
-              incrementVote(advancedVotes, bracket[i].team_home)
-              incrementVote(advancedVotes, bracket[i].team_away)
-            }
-          }
-
-          // 3RD Place
-          const m103 = bracket[103]
-          const match103Info = allMatches.find(m => m.match_number === 103)
-          const p103 = match103Info ? userPreds.find(p => p.match_id === match103Info.id) : null
-          
-          if (m103 && p103 && p103.score_home !== null && p103.score_away !== null) {
-            let hTeam = m103.team_home
-            let aTeam = m103.team_away
-            if (p103.score_home > p103.score_away) incrementVote(thirdPlaceVotes, hTeam)
-            else if (p103.score_away > p103.score_home) incrementVote(thirdPlaceVotes, aTeam)
-            else {
-              if (p103.advance_on_penalties === hTeam) incrementVote(thirdPlaceVotes, hTeam)
-              else if (p103.advance_on_penalties === aTeam) incrementVote(thirdPlaceVotes, aTeam)
-            }
-          }
-
-          // FINAL
-          const m104 = bracket[104]
-          const match104Info = allMatches.find(m => m.match_number === 104)
-          const p104 = match104Info ? userPreds.find(p => p.match_id === match104Info.id) : null
-          
-          if (m104 && p104 && p104.score_home !== null && p104.score_away !== null) {
-            let hTeam = m104.team_home
-            let aTeam = m104.team_away
-            if (p104.score_home > p104.score_away) { incrementVote(championVotes, hTeam); incrementVote(runnerUpVotes, aTeam) }
-            else if (p104.score_away > p104.score_home) { incrementVote(championVotes, aTeam); incrementVote(runnerUpVotes, hTeam) }
-            else {
-              if (p104.advance_on_penalties === hTeam) { incrementVote(championVotes, hTeam); incrementVote(runnerUpVotes, aTeam) }
-              else if (p104.advance_on_penalties === aTeam) { incrementVote(championVotes, aTeam); incrementVote(runnerUpVotes, hTeam) }
-            }
-          }
-        })
-
-        const groupAndSort = (voteMap) => {
-          const arr = Object.values(voteMap).sort((a, b) => b.votes - a.votes)
-          const grouped = []
-          arr.forEach(item => {
-            const last = grouped[grouped.length - 1]
-            if (last && last.votes === item.votes) {
-              last.teams.push(item)
-            } else {
-              grouped.push({ votes: item.votes, teams: [item] })
-            }
-          })
-          grouped.forEach(g => g.teams.sort((a, b) => translateTeam(a.id).localeCompare(translateTeam(b.id))))
-          return grouped
-        }
-
-        const advancedRankings = groupAndSort(advancedVotes)
-        let currentRank = 1
-        const advancedList = advancedRankings.map(group => {
-          const item = { rank: currentRank, ...group }
-          currentRank += group.teams.length
-          return item
-        })
-
-        setKnockoutStats({
-          champion: groupAndSort(championVotes)[0] || null,
-          runnerUp: groupAndSort(runnerUpVotes)[0] || null,
-          thirdPlace: groupAndSort(thirdPlaceVotes)[0] || null,
-          advanced: advancedList,
-          maxAdvancedVotes: advancedList.length > 0 ? advancedList[0].votes : 0
-        })
-
+        setKnockoutStats(cachedStats['Mata-Mata'])
       } else {
         // Group Stage Stats
-        const matches = allMatches.filter(m => m.cup_group === selectedGroup)
-        if (!matches || matches.length === 0) return
-
-        const matchIds = matches.map(m => m.id)
-        const { data: predictions } = await supabase
-          .from('predictions')
-          .select('match_id, score_home, score_away')
-          .in('match_id', matchIds)
-
-        const matchStats = matches.map(match => {
+        const groupStats = cachedStats[selectedGroup]
+        if (!groupStats || groupStats.length === 0) {
+          setStats([])
+          return
+        }
+        
+        // Merge with live data if any match is currently happening
+        const matchStats = groupStats.map(match => {
           const live = liveMatches[match.match_number]
           let sh = match.score_home
           let sa = match.score_away
@@ -180,44 +85,21 @@ export default function StatsPage() {
             sa = live.score_away
           }
 
-          const matchPreds = (predictions || []).filter(p => p.match_id === match.id)
-          const total = matchPreds.length
-
-          let homeWins = 0
-          let draws = 0
-          let awayWins = 0
-          let avgHome = 0
-          let avgAway = 0
-
-          matchPreds.forEach(p => {
-            if (p.score_home > p.score_away) homeWins++
-            else if (p.score_home === p.score_away) draws++
-            else awayWins++
-            avgHome += p.score_home
-            avgAway += p.score_away
-          })
-
           return {
             ...match,
             score_home: sh,
             score_away: sa,
-            liveData: live,
-            totalPredictions: total,
-            homeWinPct: total > 0 ? Math.round((homeWins / total) * 100) : 0,
-            drawPct: total > 0 ? Math.round((draws / total) * 100) : 0,
-            awayWinPct: total > 0 ? Math.round((awayWins / total) * 100) : 0,
-            avgHome: total > 0 ? (avgHome / total).toFixed(1) : '–',
-            avgAway: total > 0 ? (avgAway / total).toFixed(1) : '–',
+            liveData: live
           }
         })
         setStats(matchStats)
       }
     } catch (err) {
-      console.error('Error fetching stats:', err)
+      console.error('Error fetching stats from cache:', err)
     } finally {
       setLoading(false)
     }
-  }, [selectedGroup, league.id, liveMatches])
+  }, [selectedGroup, liveMatches])
 
   useEffect(() => {
     fetchStats()
