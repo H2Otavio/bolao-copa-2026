@@ -2,8 +2,8 @@ name: Sync Live Scores
 
 on:
   schedule:
-    # Runs every 10 minutes
-    - cron: '*/10 * * * *'
+    # Runs every 10 minutes (offset by 3 mins to avoid GitHub Actions peak queue)
+    - cron: '3,13,23,33,43,53 * * * *'
   workflow_dispatch:
     # Allows manual triggering
 
