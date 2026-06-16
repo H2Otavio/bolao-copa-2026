@@ -103,41 +103,83 @@ async function syncScores() {
   const { data: allPredictions } = await supabase.from('predictions').select('id, user_id, match_id, score_home, score_away, is_simulated, simulated_team_home, simulated_team_away, advance_on_penalties, updated_at');
   const predictions = allPredictions || [];
 
-  // 1. Calculate Global Ranking
+  // Calculate order rank globally for all predictions
+  const matchPredictionsMap = {};
+  predictions.forEach(p => {
+    if (!matchPredictionsMap[p.match_id]) matchPredictionsMap[p.match_id] = [];
+    matchPredictionsMap[p.match_id].push(p);
+  });
+
+  Object.values(matchPredictionsMap).forEach(matchPreds => {
+    matchPreds.sort((a, b) => new Date(a.updated_at) - new Date(b.updated_at));
+    matchPreds.forEach((p, index) => {
+      p.orderRank = index + 1;
+    });
+  });
+
+  // 1. Calculate Rankings
   console.log("Calculating rankings...");
   const userScores = users.map(u => {
     const userPreds = predictions.filter(p => p.user_id === u.id);
-    let pts = 0, exactBoth = 0;
+    let totalPoints = 0, exactBoth = 0, correctResults = 0, sumOrderRank = 0;
     
     // Evaluate standard matches
     userPreds.forEach(p => {
+      if (p.orderRank) sumOrderRank += p.orderRank;
+
       const match = allMatches.find(m => m.id === p.match_id);
       if (match) {
         const result = calcScore(p, match);
-        pts += result.total;
-        exactBoth += (result.exactBothPoints > 0 ? 1 : 0);
+        totalPoints += result.total;
+        if (result.exactBothPoints > 0) exactBoth++;
+        if (result.winnerPoints > 0) correctResults++;
       }
     });
 
-    // Evaluate Group placements bonus (if implemented in future, right now just match scores)
+    const avgOrder = userPreds.length > 0 ? sumOrderRank / userPreds.length : 999999;
+
     return {
       id: u.id,
       name: u.name,
       league_id: u.league_id,
-      totalPoints: pts,
+      totalPoints,
       exactBothPoints: exactBoth,
+      correctResults,
+      avgOrder,
       predictionsCount: userPreds.length
     };
   });
 
+  const sortRanking = (rankingArray) => {
+    rankingArray.sort((a, b) => {
+      if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+      if (b.exactBothPoints !== a.exactBothPoints) return b.exactBothPoints - a.exactBothPoints;
+      if (b.correctResults !== a.correctResults) return b.correctResults - a.correctResults;
+      return a.avgOrder - b.avgOrder; // Lowest average order wins the tie
+    });
+  };
+
   // Sort Global Ranking
-  userScores.sort((a, b) => {
-    if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
-    if (b.exactBothPoints !== a.exactBothPoints) return b.exactBothPoints - a.exactBothPoints;
-    return a.name.localeCompare(b.name);
+  sortRanking(userScores);
+  await supabase.from('app_cache').upsert({ key: 'global_ranking', value: userScores });
+
+  // Group by league and cache
+  const leagueScores = {};
+  userScores.forEach(u => {
+    if (!leagueScores[u.league_id]) leagueScores[u.league_id] = [];
+    leagueScores[u.league_id].push(u);
   });
 
-  await supabase.from('app_cache').upsert({ key: 'global_ranking', value: userScores });
+  const appCacheUpdates = Object.keys(leagueScores).map(leagueId => {
+    const scores = leagueScores[leagueId];
+    sortRanking(scores);
+    return { key: `ranking_data_${leagueId}`, value: scores };
+  });
+
+  if (appCacheUpdates.length > 0) {
+    // Insert in batches if necessary, but upsert accepts an array
+    await supabase.from('app_cache').upsert(appCacheUpdates);
+  }
 
   // 2. Calculate Global Stats
   console.log("Calculating stats...");
