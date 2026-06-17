@@ -50,7 +50,7 @@ export function AuthProvider({ children }) {
       if (event === 'SIGNED_OUT') {
         setUser(null)
         setLeague(null)
-      } else if (session && !user) {
+      } else if (event === 'SIGNED_IN' && session) {
         const { data: userData } = await supabase
           .from('users')
           .select('*, leagues(*)')
@@ -69,7 +69,7 @@ export function AuthProvider({ children }) {
     return () => {
       subscription.unsubscribe()
     }
-  }, [user])
+  }, [])
 
   const register = async (name, email, password, code) => {
     // 1. Verifica se nome de usuário já existe globalmente
