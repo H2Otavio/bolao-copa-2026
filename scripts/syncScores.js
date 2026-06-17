@@ -16,82 +16,67 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 async function syncScores() {
   console.log("Starting score synchronization with worldcup26.ir...");
 
-  const url = `https://worldcup26.ir/get/games`;
-
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    console.error(`API Error: ${response.status}`);
-    const text = await response.text();
-    console.error(text);
-    process.exit(1);
-  }
-
-  const json = await response.json();
-  // The API returns an object with a "games" array
-  const fixtures = Array.isArray(json.games) ? json.games : (Array.isArray(json.data) ? json.data : (Array.isArray(json) ? json : []));
-
-  console.log(`Found ${fixtures.length} matches in the API.`);
-
-  if (fixtures.length === 0) return;
-
-  // We fetch all current matches from Supabase to match them
-  const { data: dbMatches, error: dbError } = await supabase.from('matches').select('*');
-  if (dbError) {
-    console.error("Error fetching DB matches:", dbError);
-    process.exit(1);
-  }
-  
   let updatedCount = 0;
 
-  for (const fixture of fixtures) {
-    // API match id usually maps directly to our match_number
-    const apiId = fixture.id || fixture.match_number;
-    const isFinished = fixture.finished === "TRUE" || fixture.finished === true;
-    
-    // Convert scores to numbers safely
-    const scoreHome = parseInt(fixture.home_score, 10);
-    const scoreAway = parseInt(fixture.away_score, 10);
+  try {
+    const url = `https://worldcup26.ir/get/games`;
+    const response = await fetch(url);
 
-    // Only process if the match has started
-    if (fixture.time_elapsed !== 'notstarted' && !isNaN(scoreHome) && !isNaN(scoreAway)) {
+    if (!response.ok) {
+      console.error(`API Error: ${response.status}`);
+      const text = await response.text();
+      console.error(text);
+      throw new Error('API down');
+    }
+
+    const json = await response.json();
+    const fixtures = Array.isArray(json.games) ? json.games : (Array.isArray(json.data) ? json.data : (Array.isArray(json) ? json : []));
+
+    console.log(`Found ${fixtures.length} matches in the API.`);
+
+    if (fixtures.length > 0) {
+      const { data: dbMatches, error: dbError } = await supabase.from('matches').select('*');
+      if (dbError) {
+        console.error("Error fetching DB matches:", dbError);
+        throw new Error('DB fetch error');
+      }
       
-      const match = dbMatches.find(m => m.match_number === parseInt(apiId, 10) || (m.team_home === fixture.home_team_en && m.team_away === fixture.away_team_en));
+      for (const fixture of fixtures) {
+        const apiId = fixture.id || fixture.match_number;
+        const isFinished = fixture.finished === "TRUE" || fixture.finished === true;
+        const scoreHome = parseInt(fixture.home_score, 10);
+        const scoreAway = parseInt(fixture.away_score, 10);
 
-      if (match) {
-        // Check if we actually need to update (to avoid unnecessary DB writes)
-        const needsUpdate = 
-          match.score_home !== scoreHome || 
-          match.score_away !== scoreAway;
+        if (fixture.time_elapsed !== 'notstarted' && !isNaN(scoreHome) && !isNaN(scoreAway)) {
+          const match = dbMatches.find(m => m.match_number === parseInt(apiId, 10) || (m.team_home === fixture.home_team_en && m.team_away === fixture.away_team_en));
 
-        if (needsUpdate) {
-          const updatePayload = {
-            score_home: scoreHome,
-            score_away: scoreAway
-          };
+          if (match) {
+            const needsUpdate = match.score_home !== scoreHome || match.score_away !== scoreAway;
 
-          const { error: updateError } = await supabase
-            .from('matches')
-            .update(updatePayload)
-            .eq('id', match.id);
+            if (needsUpdate) {
+              const updatePayload = { score_home: scoreHome, score_away: scoreAway };
+              const { error: updateError } = await supabase.from('matches').update(updatePayload).eq('id', match.id);
 
-          if (updateError) {
-            console.error(`Failed to update Match ${match.match_number} (${match.team_home} vs ${match.team_away}):`, updateError);
-          } else {
-            console.log(`Successfully updated Match ${match.match_number} (${match.team_home} vs ${match.team_away}) to ${scoreHome} - ${scoreAway}. Finished: ${isFinished}`);
-            updatedCount++;
+              if (updateError) {
+                console.error(`Failed to update Match ${match.match_number} (${match.team_home} vs ${match.team_away}):`, updateError);
+              } else {
+                console.log(`Successfully updated Match ${match.match_number} (${match.team_home} vs ${match.team_away}) to ${scoreHome} - ${scoreAway}. Finished: ${isFinished}`);
+                updatedCount++;
+              }
+            }
           }
         }
       }
     }
+  } catch (err) {
+    console.error("Skipping external API sync due to error:", err.message);
   }
 
-  console.log(`Synchronization complete. Updated ${updatedCount} matches.`);
+  console.log(`Synchronization step complete. Updated ${updatedCount} matches from external API.`);
 
   // --- BEGIN STATS & RANKING CALCULATION ---
   console.log("Fetching pre-calculated rankings from Supabase View (0% Egress)...");
 
-  // Fetch rankings directly from the View! (No predictions fetch = No Egress leak)
   const { data: userScores, error: urError } = await supabase.from('vw_user_rankings').select('*');
   
   if (urError) {
