@@ -68,12 +68,12 @@ export default function RegisterPage() {
           
           <form onSubmit={handleRegister} className="space-y-5 animate-fade-in">
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">Escolha um Usuário único</label>
+              <label className="block text-sm font-medium text-text-secondary mb-2">Seu nome</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Ex: joaosilva"
+                placeholder="Ex: João da Silva"
                 className="input-field"
                 maxLength={50}
                 autoComplete="username"
