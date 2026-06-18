@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 
 export default function AdminLoginPage() {
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -18,14 +18,14 @@ export default function AdminLoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault()
-    if (!username.trim() || !password.trim()) {
-      setError('Preencha usuário e senha.')
+    if (!email.trim() || !password.trim()) {
+      setError('Preencha e-mail e senha.')
       return
     }
     setLoading(true)
     setError('')
     try {
-      await adminLogin(username.trim(), password.trim())
+      await adminLogin(email.trim(), password.trim())
       navigate('/admin')
     } catch (err) {
       setError(err.message)
@@ -52,14 +52,14 @@ export default function AdminLoginPage() {
         <div className="glass-card p-6 md:p-8 border border-accent-gold/20">
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">Usuário</label>
+              <label className="block text-sm font-medium text-text-secondary mb-2">E-mail</label>
               <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Ex: admin"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seu@email.com"
                 className="input-field"
-                autoComplete="username"
+                autoComplete="email"
               />
             </div>
             <div>

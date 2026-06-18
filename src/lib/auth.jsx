@@ -141,10 +141,8 @@ export function AuthProvider({ children }) {
       .from('users')
       .insert({ 
         auth_id: authData.user.id, 
-        email: email.trim(),
         name: name.trim(), 
-        league_id: leagueData.id,
-        password: 'USE_SUPABASE_AUTH' // Preenche a restrição antiga do banco de dados de forma segura
+        league_id: leagueData.id
       })
       .select()
       .single()
@@ -204,23 +202,41 @@ export function AuthProvider({ children }) {
     setLeague(null)
   }
 
-  const adminLogin = async (username, password) => {
-    const { data: admin, error } = await supabase
-      .from('admins')
-      .select('*')
-      .eq('username', username)
-      .eq('password', password)
+  const adminLogin = async (email, password) => {
+    // Login com Supabase Auth (usa as mesmas credenciais de usuário)
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password
+    })
+
+    if (authError) throw new Error('E-mail ou senha incorretos.')
+
+    // Verifica se o usuário tem a flag is_admin
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('*, leagues(*)')
+      .eq('auth_id', authData.user.id)
       .maybeSingle()
 
-    if (error || !admin) {
-      throw new Error('Usuário ou senha inválidos.')
+    if (userError || !userData) {
+      throw new Error('Perfil não encontrado.')
     }
 
+    if (!userData.is_admin) {
+      throw new Error('Acesso negado. Este usuário não é administrador.')
+    }
+
+    const leagueData = userData.leagues
+    delete userData.leagues
+    setUser(userData)
+    setLeague(leagueData)
+
+    const adminObj = { username: userData.name, id: userData.id }
     try {
-      localStorage.setItem('bolao_admin_session', JSON.stringify(admin))
+      localStorage.setItem('bolao_admin_session', JSON.stringify(adminObj))
     } catch(e) {}
-    setAdminUser(admin)
-    return admin
+    setAdminUser(adminObj)
+    return adminObj
   }
 
   const adminLogout = () => {
