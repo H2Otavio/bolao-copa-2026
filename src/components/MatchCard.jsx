@@ -39,8 +39,10 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
       isSimulatedView = true
       
       if (prediction && prediction.is_simulated && prediction.simulated_team_home && prediction.simulated_team_away) {
-        if (prediction.simulated_team_home !== simulatedMatch.team_home || prediction.simulated_team_away !== simulatedMatch.team_away) {
-          mismatchWarning = true;
+        if (simulatedMatch.team_home && simulatedMatch.team_away) {
+          if (prediction.simulated_team_home !== simulatedMatch.team_home || prediction.simulated_team_away !== simulatedMatch.team_away) {
+            mismatchWarning = true;
+          }
         }
       }
     } else {

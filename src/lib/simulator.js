@@ -196,6 +196,11 @@ export function generateKnockoutBracket(allMatches, allPredictions) {
       }
       return null
     }
+    if (pred.is_simulated) {
+      if (pred.simulated_team_home !== sim.team_home || pred.simulated_team_away !== sim.team_away) {
+        return null // Mismatch! Do not propagate winner.
+      }
+    }
     
     if (pred.score_home > pred.score_away) return { id: sim.team_home, flag: sim.flag_home }
     if (pred.score_away > pred.score_home) return { id: sim.team_away, flag: sim.flag_away }
@@ -204,16 +209,7 @@ export function generateKnockoutBracket(allMatches, allPredictions) {
     if (pred.advance_on_penalties === sim.team_home) return { id: sim.team_home, flag: sim.flag_home }
     if (pred.advance_on_penalties === sim.team_away) return { id: sim.team_away, flag: sim.flag_away }
     
-    // Fallback if penalty winner is from an old simulation
-    if (pred.advance_on_penalties && pred.simulated_team_home && pred.advance_on_penalties === pred.simulated_team_home) {
-      return { id: sim.team_home, flag: sim.flag_home }
-    }
-    if (pred.advance_on_penalties && pred.simulated_team_away && pred.advance_on_penalties === pred.simulated_team_away) {
-      return { id: sim.team_away, flag: sim.flag_away }
-    }
-    
-    // Absolute fallback to keep bracket flowing
-    return { id: sim.team_home, flag: sim.flag_home }
+    return null // Needs penalty resolution
   }
 
   // R16 (Matches 89 to 96)
