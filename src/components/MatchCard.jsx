@@ -28,6 +28,7 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
   
   let isSimulatedView = false
   let mismatchWarning = false
+  let teamsHit = -1;
 
   if (simulatedMatch) {
     if (!isRealMatchReady) {
@@ -37,8 +38,11 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
       displayFlagAway = simulatedMatch.flag_away
       isSimulatedView = true
     } else {
-      if (match.team_home !== simulatedMatch.team_home || match.team_away !== simulatedMatch.team_away) {
-        mismatchWarning = true
+      teamsHit = 0;
+      if (match.team_home === simulatedMatch.team_home) teamsHit++;
+      if (match.team_away === simulatedMatch.team_away) teamsHit++;
+      if (teamsHit < 2) {
+        mismatchWarning = true;
       }
     }
   }
@@ -161,12 +165,32 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
       hasResult ? 'border-accent-green/20' : ''
     } ${saved ? 'ring-2 ring-accent-green/40' : ''}`}>
       
-      {/* Segunda Chance Warning */}
-      {mismatchWarning && (
-        <div className="mb-4 bg-accent-gold/10 border border-accent-gold/30 rounded-lg p-3 text-center animate-fade-in">
-          <p className="text-xs text-danger mb-1 font-bold">Errou o cruzamento!</p>
-          <p className="text-[11px] text-danger/80">Seu simulador previa: {translateTeam(displaySimTeamHome)} x {translateTeam(displaySimTeamAway)}</p>
-          <p className="text-[11px] text-text-muted mt-1">Preencha um novo placar abaixo para o confronto real.</p>
+      {/* Knockout Validation Toast */}
+      {teamsHit !== -1 && (
+        <div className={`mb-4 border rounded-lg p-3 text-center animate-fade-in ${
+          teamsHit === 2 ? 'bg-accent-green/10 border-accent-green/30' : 
+          teamsHit === 1 ? 'bg-accent-gold/10 border-accent-gold/30' : 
+          'bg-danger/10 border-danger/30'
+        }`}>
+          <p className={`text-xs mb-1 font-bold ${
+            teamsHit === 2 ? 'text-accent-green' : 
+            teamsHit === 1 ? 'text-accent-gold' : 
+            'text-danger'
+          }`}>
+            {teamsHit === 2 ? 'Parabéns pela predição!' : 
+             teamsHit === 1 ? 'Acerto parcial do cruzamento!' : 
+             'Errou o cruzamento completo!'}
+          </p>
+          <p className={`text-[11px] ${
+            teamsHit === 2 ? 'text-accent-green/80' : 
+            teamsHit === 1 ? 'text-accent-gold/80' : 
+            'text-danger/80'
+          }`}>
+            Seu simulador previa: {translateTeam(displaySimTeamHome)} x {translateTeam(displaySimTeamAway)}
+          </p>
+          {teamsHit < 2 && (
+            <p className="text-[11px] text-text-muted mt-1">Preencha um novo placar abaixo para o confronto real.</p>
+          )}
         </div>
       )}
 
