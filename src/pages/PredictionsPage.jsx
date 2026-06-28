@@ -200,13 +200,26 @@ export default function PredictionsPage() {
 
   // Count predictions per group for badges
   const [predCounts, setPredCounts] = useState({})
+  const [phaseUnlocked, setPhaseUnlocked] = useState({})
   useEffect(() => {
     const counts = {}
     const lockTime = new Date(Date.now() + 5 * 60 * 1000)
+    const placeholderRegex = /1[A-L]|2[A-L]|3rd|Vencedor|Winner|Perdedor|Loser|Runner-up/
     
     allMatches.forEach(m => {
       const p = allPredictionsMap[m.id]
-      const isFilled = p && p.score_home !== null && p.score_away !== null
+      const isKnockout = m.cup_group && m.cup_group.length > 1
+      const isRealMatchReady = isKnockout && !placeholderRegex.test(m.team_home || '') && !placeholderRegex.test(m.team_away || '')
+      
+      let isPendingMismatch = false
+      if (isRealMatchReady && p && p.is_simulated) {
+        let hitCount = 0
+        if (m.team_home === p.simulated_team_home) hitCount++
+        if (m.team_away === p.simulated_team_away) hitCount++
+        if (hitCount < 2) isPendingMismatch = true
+      }
+
+      const isFilled = p && p.score_home !== null && p.score_away !== null && !isPendingMismatch
       const hasStarted = m.match_date && parseMatchDate(m.match_date) < lockTime
       const hasResult = m.score_home !== null && m.score_away !== null
       
@@ -218,7 +231,18 @@ export default function PredictionsPage() {
     })
     
     setPredCounts(counts)
-  }, [allPredictionsMap, allMatches])
+
+    const isGroupUnlocked = (group, total) => (counts[group] || 0) >= total
+    setPhaseUnlocked({
+      R32: knockoutUnlocked,
+      R16: knockoutUnlocked && isGroupUnlocked('R32', 16),
+      QF: knockoutUnlocked && isGroupUnlocked('R32', 16) && isGroupUnlocked('R16', 8),
+      SF: knockoutUnlocked && isGroupUnlocked('R32', 16) && isGroupUnlocked('R16', 8) && isGroupUnlocked('QF', 4),
+      '3RD': knockoutUnlocked && isGroupUnlocked('R32', 16) && isGroupUnlocked('R16', 8) && isGroupUnlocked('QF', 4) && isGroupUnlocked('SF', 2),
+      FINAL: knockoutUnlocked && isGroupUnlocked('R32', 16) && isGroupUnlocked('R16', 8) && isGroupUnlocked('QF', 4) && isGroupUnlocked('SF', 2),
+    })
+
+  }, [allPredictionsMap, allMatches, knockoutUnlocked])
 
   return (
     <div className="animate-fade-in">
@@ -234,6 +258,7 @@ export default function PredictionsPage() {
         predCounts={predCounts}
         matchesPerGroup={selectedGroup.length > 1 ? 0 : 6}
         knockoutUnlocked={knockoutUnlocked}
+        phaseUnlocked={phaseUnlocked}
       />
 
       {loading ? (

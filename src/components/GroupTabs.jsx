@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react'
 
-export default function GroupTabs({ groups, selected, onSelect, predCounts, matchesPerGroup, knockoutUnlocked }) {
+export default function GroupTabs({ groups, selected, onSelect, predCounts, matchesPerGroup, knockoutUnlocked, phaseUnlocked = {} }) {
   const scrollRef = useRef(null)
 
   // Auto-scroll to selected tab
@@ -86,16 +86,20 @@ export default function GroupTabs({ groups, selected, onSelect, predCounts, matc
           
           const isComplete = count >= total
 
+          const unlocked = isKnockoutPhase ? (phaseUnlocked[group] ?? true) : true;
+
           return (
             <button
               key={group}
               data-active={isActive}
               onClick={() => onSelect(group)}
-              className={`relative flex-shrink-0 ${
+              disabled={!unlocked}
+              className={`relative flex-shrink-0 flex items-center gap-1 ${
                 isActive ? 'tab-active' : 'tab-inactive'
-              }`}
+              } ${!unlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <span className="text-sm">{isKnockoutPhase ? getKnockoutLabel(group) : `Grupo ${group}`}</span>
+              {!unlocked && <span className="text-xs">🔒</span>}
 
               {/* Prediction count badge */}
               {predCounts && (
