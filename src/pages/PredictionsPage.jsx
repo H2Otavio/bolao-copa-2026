@@ -212,11 +212,20 @@ export default function PredictionsPage() {
       const isRealMatchReady = isKnockout && !placeholderRegex.test(m.team_home || '') && !placeholderRegex.test(m.team_away || '')
       
       let isPendingMismatch = false
-      if (isRealMatchReady && p && p.is_simulated) {
-        let hitCount = 0
-        if (m.team_home === p.simulated_team_home) hitCount++
-        if (m.team_away === p.simulated_team_away) hitCount++
-        if (hitCount < 2) isPendingMismatch = true
+      if (p && p.is_simulated) {
+        if (isRealMatchReady) {
+          let hitCount = 0
+          if (m.team_home === p.simulated_team_home) hitCount++
+          if (m.team_away === p.simulated_team_away) hitCount++
+          if (hitCount < 2) isPendingMismatch = true
+        } else if (simulatedBracket) {
+          const sim = simulatedBracket[m.match_number]
+          if (sim && p.simulated_team_home && p.simulated_team_away) {
+            if (sim.team_home !== p.simulated_team_home || sim.team_away !== p.simulated_team_away) {
+              isPendingMismatch = true
+            }
+          }
+        }
       }
 
       const isFilled = p && p.score_home !== null && p.score_away !== null && !isPendingMismatch
@@ -242,7 +251,7 @@ export default function PredictionsPage() {
       FINAL: knockoutUnlocked && isGroupUnlocked('R32', 16) && isGroupUnlocked('R16', 8) && isGroupUnlocked('QF', 4) && isGroupUnlocked('SF', 2),
     })
 
-  }, [allPredictionsMap, allMatches, knockoutUnlocked])
+  }, [allPredictionsMap, allMatches, knockoutUnlocked, simulatedBracket])
 
   return (
     <div className="animate-fade-in">

@@ -37,6 +37,12 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
       displayTeamAway = simulatedMatch.team_away
       displayFlagAway = simulatedMatch.flag_away
       isSimulatedView = true
+      
+      if (prediction && prediction.is_simulated && prediction.simulated_team_home && prediction.simulated_team_away) {
+        if (prediction.simulated_team_home !== simulatedMatch.team_home || prediction.simulated_team_away !== simulatedMatch.team_away) {
+          mismatchWarning = true;
+        }
+      }
     } else {
       teamsHit = 0;
       if (match.team_home === simulatedMatch.team_home) teamsHit++;
@@ -165,6 +171,18 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
       hasResult ? 'border-accent-green/20' : ''
     } ${saved ? 'ring-2 ring-accent-green/40' : ''}`}>
       
+      {/* Simulation Mismatch Toast */}
+      {isSimulatedView && mismatchWarning && (
+        <div className="mb-4 border rounded-lg p-3 text-center animate-fade-in bg-danger/10 border-danger/30">
+          <p className="text-xs font-bold text-danger">
+            Confronto alterado pelos novos resultados da fase de grupos!
+          </p>
+          <p className="text-[11px] text-danger/80 mt-1">
+            Seu palpite anterior era: {translateTeam(prediction.simulated_team_home)} x {translateTeam(prediction.simulated_team_away)}
+          </p>
+        </div>
+      )}
+
       {/* Knockout Validation Toast */}
       {teamsHit !== -1 && (
         <div className={`mb-4 border rounded-lg p-3 text-center animate-fade-in ${
