@@ -27,14 +27,14 @@ export function calcScore(prediction, match) {
 
   const isKnockout = match.cup_group && match.cup_group.length > 1
 
-  // 1. Evaluate Team Points (Only for Knockout)
+  // 1. Evaluate Team Points (Only for Knockout R32)
   let teamsMatchPerfectly = false
   if (isKnockout) {
     let teamsHit = 0
     if (match.team_home && prediction.simulated_team_home === match.team_home) teamsHit++
     if (match.team_away && prediction.simulated_team_away === match.team_away) teamsHit++
 
-    if (teamsHit > 0) {
+    if (teamsHit > 0 && match.cup_group === 'R32') {
       teamPoints = teamsHit * 2
       details.push(`Acertou ${teamsHit} seleç${teamsHit > 1 ? 'ões' : 'ão'} (${teamPoints}pts)`)
     }
@@ -59,6 +59,7 @@ export function calcScore(prediction, match) {
   // OR if they perfectly predicted both teams in the simulation.
   const isScoreValid = !isKnockout || (!prediction.is_simulated || teamsMatchPerfectly)
 
+  let penaltyPoints = 0
   if (isScoreValid) {
     // Determine winner/draw
     const predResult = Math.sign(prediction.score_home - prediction.score_away)
@@ -67,6 +68,14 @@ export function calcScore(prediction, match) {
     if (predResult === realResult) {
       winnerPoints = 3
       details.push('Acertou o resultado')
+      
+      // If it's a draw in knockout, check for correct penalty winner
+      if (predResult === 0 && isKnockout && prediction.advance_on_penalties && match.advance_on_penalties) {
+        if (prediction.advance_on_penalties === match.advance_on_penalties) {
+          penaltyPoints = 1
+          details.push('Acertou vencedor nos pênaltis')
+        }
+      }
     }
 
     // Exact goals
@@ -84,7 +93,7 @@ export function calcScore(prediction, match) {
     details.push('Placar ignorado (times incorretos)')
   }
 
-  const total = winnerPoints + exactOnePoints + exactBothPoints + teamPoints
+  const total = winnerPoints + exactOnePoints + exactBothPoints + teamPoints + penaltyPoints
 
   return {
     total,
@@ -99,4 +108,4 @@ export function calcScore(prediction, match) {
 /**
  * Get the max possible points for display
  */
-export const MAX_POINTS_PER_MATCH = 9 // 5 for score + 4 for teams
+export const MAX_POINTS_PER_MATCH = 10 // 5 for score + 4 for teams + 1 for penalty // 5 for score + 4 for teams

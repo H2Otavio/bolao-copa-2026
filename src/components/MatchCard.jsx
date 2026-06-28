@@ -177,8 +177,8 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
             teamsHit === 1 ? 'text-accent-gold' : 
             'text-danger'
           }`}>
-            {teamsHit === 2 ? 'Parabéns pela predição!' : 
-             teamsHit === 1 ? 'Acerto parcial do cruzamento!' : 
+            {teamsHit === 2 ? (match.cup_group === 'R32' ? 'Parabéns pela predição! (+4 pts)' : 'Parabéns pela predição!') : 
+             teamsHit === 1 ? (match.cup_group === 'R32' ? 'Acerto parcial do cruzamento! (+2 pts)' : 'Acerto parcial do cruzamento!') : 
              'Errou o cruzamento completo!'}
           </p>
           <p className={`text-[11px] ${
