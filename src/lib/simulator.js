@@ -204,7 +204,16 @@ export function generateKnockoutBracket(allMatches, allPredictions) {
     if (pred.advance_on_penalties === sim.team_home) return { id: sim.team_home, flag: sim.flag_home }
     if (pred.advance_on_penalties === sim.team_away) return { id: sim.team_away, flag: sim.flag_away }
     
-    return null // Needs penalty resolution
+    // Fallback if penalty winner is from an old simulation
+    if (pred.advance_on_penalties && pred.simulated_team_home && pred.advance_on_penalties === pred.simulated_team_home) {
+      return { id: sim.team_home, flag: sim.flag_home }
+    }
+    if (pred.advance_on_penalties && pred.simulated_team_away && pred.advance_on_penalties === pred.simulated_team_away) {
+      return { id: sim.team_away, flag: sim.flag_away }
+    }
+    
+    // Absolute fallback to keep bracket flowing
+    return { id: sim.team_home, flag: sim.flag_home }
   }
 
   // R16 (Matches 89 to 96)
