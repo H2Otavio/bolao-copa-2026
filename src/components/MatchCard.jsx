@@ -141,6 +141,10 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
     if (!flag) return null
     if (flag.startsWith('http')) return flag
 
+    if (flag === '🏴󠁧󠁢󠁥󠁮󠁧󠁿') return 'https://flagcdn.com/w80/gb-eng.png'
+    if (flag === '🏴󠁧󠁢󠁷󠁬󠁳󠁿') return 'https://flagcdn.com/w80/gb-wls.png'
+    if (flag === '🏴󠁧󠁢󠁳󠁣󠁴󠁿') return 'https://flagcdn.com/w80/gb-sct.png'
+
     let code = ''
     const codePoints = Array.from(flag).map(c => c.codePointAt(0))
     if (codePoints.length === 2 && codePoints[0] >= 0x1F1E6 && codePoints[0] <= 0x1F1FF) {
