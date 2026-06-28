@@ -47,16 +47,16 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
       }
     } else {
       teamsHit = 0;
-      if (prediction && match.team_home === prediction.simulated_team_home) teamsHit++;
-      if (prediction && match.team_away === prediction.simulated_team_away) teamsHit++;
+      if (match.team_home === simulatedMatch.team_home) teamsHit++;
+      if (match.team_away === simulatedMatch.team_away) teamsHit++;
       if (teamsHit < 2) {
         mismatchWarning = true;
       }
     }
   }
 
-  const displaySimTeamHome = prediction?.simulated_team_home || simulatedMatch?.team_home
-  const displaySimTeamAway = prediction?.simulated_team_away || simulatedMatch?.team_away
+  const displaySimTeamHome = simulatedMatch ? simulatedMatch.team_home : prediction?.simulated_team_home
+  const displaySimTeamAway = simulatedMatch ? simulatedMatch.team_away : prediction?.simulated_team_away
 
   // Initialize from prediction
   useEffect(() => {
