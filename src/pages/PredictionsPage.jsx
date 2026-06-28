@@ -17,7 +17,7 @@ export default function PredictionsPage() {
   const location = useLocation()
 
   // Initialize group from query param if available
-  const initialGroup = new URLSearchParams(location.search).get('group') || 'A'
+  const initialGroup = new URLSearchParams(location.search).get('group') || 'R32'
   const [selectedGroup, setSelectedGroup] = useState(initialGroup)
 
   const [allMatches, setAllMatches] = useState([])

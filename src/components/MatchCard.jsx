@@ -110,8 +110,17 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
   // Calculate points if there's a result
   const scoreResult = hasResult && prediction
     ? calcScore(
-        { score_home: prediction.score_home, score_away: prediction.score_away },
-        { score_home: match.score_home, score_away: match.score_away }
+        { 
+          ...prediction, 
+          is_simulated: isSimulatedView || prediction.is_simulated,
+          simulated_team_home: displaySimTeamHome,
+          simulated_team_away: displaySimTeamAway
+        },
+        { 
+          ...match, 
+          score_home: parseInt(match.score_home), 
+          score_away: parseInt(match.score_away) 
+        }
       )
     : null
 
@@ -265,14 +274,7 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
         </div>
       )}
 
-      {/* Mismatch Warning */}
-      {mismatchWarning && (
-        <div className="mt-3 p-3 rounded-lg bg-danger/10 border border-danger/20 text-center animate-fade-in">
-          <p className="text-xs text-danger mb-1 font-bold">Errou o cruzamento!</p>
-          <p className="text-[11px] text-danger/80">Seu simulador previa: {translateTeam(prediction.simulated_team_home)} x {translateTeam(prediction.simulated_team_away)}</p>
-          <p className="text-[11px] text-text-muted mt-1">Preencha um novo placar acima para o confronto real.</p>
-        </div>
-      )}
+      
 
       {/* Result + Points row (shown when match has real result) */}
       {hasResult && (
