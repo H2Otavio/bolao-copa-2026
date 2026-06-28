@@ -38,23 +38,26 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
       isSimulatedView = true
     } else {
       if (match.team_home !== simulatedMatch.team_home || match.team_away !== simulatedMatch.team_away) {
-        if (prediction?.is_simulated) {
-          mismatchWarning = true
-        }
+        mismatchWarning = true
       }
     }
   }
 
+  const displaySimTeamHome = simulatedMatch ? simulatedMatch.team_home : prediction?.simulated_team_home
+  const displaySimTeamAway = simulatedMatch ? simulatedMatch.team_away : prediction?.simulated_team_away
+
   // Initialize from prediction
   useEffect(() => {
-    if (prediction && !mismatchWarning) {
-      setHomeScore(prediction.score_home?.toString() ?? '')
-      setAwayScore(prediction.score_away?.toString() ?? '')
-      setPenaltyWinner(prediction.advance_on_penalties ?? '')
-    } else if (mismatchWarning) {
-      setHomeScore('')
-      setAwayScore('')
-      setPenaltyWinner('')
+    if (prediction) {
+      if (mismatchWarning && prediction.is_simulated) {
+        setHomeScore('')
+        setAwayScore('')
+        setPenaltyWinner('')
+      } else {
+        setHomeScore(prediction.score_home?.toString() ?? '')
+        setAwayScore(prediction.score_away?.toString() ?? '')
+        setPenaltyWinner(prediction.advance_on_penalties ?? '')
+      }
     }
   }, [prediction, mismatchWarning])
 
@@ -152,10 +155,9 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
       {/* Segunda Chance Warning */}
       {mismatchWarning && (
         <div className="mb-4 bg-accent-gold/10 border border-accent-gold/30 rounded-lg p-3 text-center animate-fade-in">
-          <p className="text-xs md:text-sm text-accent-gold font-medium">
-            ⚠️ Os times do seu simulador não chegaram até aqui.<br/>
-            <span className="text-text-muted">Digite um novo palpite para a partida oficial!</span>
-          </p>
+          <p className="text-xs text-danger mb-1 font-bold">Errou o cruzamento!</p>
+          <p className="text-[11px] text-danger/80">Seu simulador previa: {translateTeam(displaySimTeamHome)} x {translateTeam(displaySimTeamAway)}</p>
+          <p className="text-[11px] text-text-muted mt-1">Preencha um novo placar abaixo para o confronto real.</p>
         </div>
       )}
 

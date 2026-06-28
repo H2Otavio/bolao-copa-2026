@@ -27,6 +27,8 @@ export default function AdminPage() {
   const [matches, setMatches] = useState([])
   const [loadingMatches, setLoadingMatches] = useState(true)
   const [saving, setSaving] = useState({})
+  const [editingMatchup, setEditingMatchup] = useState({})
+  const [matchupEdits, setMatchupEdits] = useState({})
   const [results, setResults] = useState({})
 
   useEffect(() => {
@@ -208,6 +210,32 @@ export default function AdminPage() {
       )
     } catch (err) {
       console.error('Error saving result:', err)
+    } finally {
+      setSaving(prev => ({ ...prev, [matchId]: false }))
+    }
+  }
+
+  const handleUpdateMatchup = async (matchId) => {
+    const edit = matchupEdits[matchId]
+    if (!edit) return
+    setSaving(prev => ({ ...prev, [matchId]: true }))
+    try {
+      const { error } = await supabase
+        .from('matches')
+        .update({
+          team_home: edit.team_home,
+          flag_home: edit.flag_home,
+          team_away: edit.team_away,
+          flag_away: edit.flag_away
+        })
+        .eq('id', matchId)
+
+      if (error) throw error
+
+      setMatches(prev => prev.map(m => m.id === matchId ? { ...m, ...edit } : m))
+      setEditingMatchup(prev => ({ ...prev, [matchId]: false }))
+    } catch (err) {
+      console.error('Error updating matchup:', err)
     } finally {
       setSaving(prev => ({ ...prev, [matchId]: false }))
     }
@@ -463,94 +491,160 @@ export default function AdminPage() {
 
                 return (
                   <div key={match.id} className="glass-card p-5 border border-border/50 hover:border-accent-gold/30 transition-colors">
-                    <div className="flex items-center gap-4">
-                      {/* Home Team */}
-                      <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-                        <span className="font-medium text-text-primary truncate hidden sm:block">{match.team_home}</span>
-                        {match.flag_home?.startsWith('http') ? (
-                          <img src={match.flag_home} alt={match.team_home} className="w-6 h-4 object-cover rounded-sm shadow-sm" />
-                        ) : (
-                          <span className="text-xl">{match.flag_home}</span>
-                        )}
-                      </div>
-
-                      {/* Score Inputs */}
-                      <div className="flex items-center gap-2 flex-col">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            min="0"
-                            max="20"
-                            value={currentResult.home ?? ''}
-                            onChange={(e) =>
-                              setResults(prev => ({
-                                ...prev,
-                                [match.id]: { ...prev[match.id], home: e.target.value },
-                              }))
-                            }
-                            className="w-12 h-10 text-center bg-bg-primary border border-border rounded font-black text-lg focus:outline-none focus:border-accent-gold"
+                    {editingMatchup[match.id] ? (
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-2 justify-between">
+                          <span className="text-sm font-bold text-accent-gold">{match.cup_group}</span>
+                          <button 
+                            onClick={() => setEditingMatchup(prev => ({ ...prev, [match.id]: false }))}
+                            className="text-text-muted hover:text-text-primary text-sm"
+                          >Cancelar</button>
+                        </div>
+                        <div className="flex flex-col sm:flex-row items-center gap-2">
+                          <input 
+                            placeholder="Flag Casa (Emoji)" 
+                            className="w-full sm:w-16 bg-bg-primary border border-border rounded px-2 py-2 text-center"
+                            value={matchupEdits[match.id]?.flag_home ?? ''}
+                            onChange={(e) => setMatchupEdits(prev => ({...prev, [match.id]: {...prev[match.id], flag_home: e.target.value}}))}
                           />
-                          <span className="text-text-muted font-bold text-lg">×</span>
-                          <input
-                            type="number"
-                            min="0"
-                            max="20"
-                            value={currentResult.away ?? ''}
-                            onChange={(e) =>
-                              setResults(prev => ({
-                                ...prev,
-                                [match.id]: { ...prev[match.id], away: e.target.value },
-                              }))
-                            }
-                            className="w-12 h-10 text-center bg-bg-primary border border-border rounded font-black text-lg focus:outline-none focus:border-accent-gold"
+                          <input 
+                            placeholder="Time Casa" 
+                            className="w-full sm:flex-1 bg-bg-primary border border-border rounded px-2 py-2"
+                            value={matchupEdits[match.id]?.team_home ?? ''}
+                            onChange={(e) => setMatchupEdits(prev => ({...prev, [match.id]: {...prev[match.id], team_home: e.target.value}}))}
                           />
                         </div>
-                      </div>
-
-                      {/* Away Team */}
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        {match.flag_away?.startsWith('http') ? (
-                          <img src={match.flag_away} alt={match.team_away} className="w-6 h-4 object-cover rounded-sm shadow-sm" />
-                        ) : (
-                          <span className="text-xl">{match.flag_away}</span>
-                        )}
-                        <span className="font-medium text-text-primary truncate hidden sm:block">{match.team_away}</span>
-                      </div>
-
-                      {/* Save Button */}
-                      <button
-                        onClick={() => handleSaveResult(match.id)}
-                        disabled={saving[match.id]}
-                        className="btn-gold !px-4 !py-2 text-sm whitespace-nowrap"
-                      >
-                        {saving[match.id] ? '...' : match.score_home !== null ? 'Atualizar' : 'Salvar'}
-                      </button>
-                    </div>
-
-                    {/* Penalty Selector for Knockout Draws */}
-                    {isKnockout && isDraw && (
-                      <div className="mt-4 pt-3 border-t border-border flex justify-center items-center gap-3">
-                        <span className="text-xs font-bold text-accent-gold uppercase">Vencedor nos Pênaltis:</span>
-                        <select
-                          value={currentResult.advance_on_penalties ?? ''}
-                          onChange={(e) => setResults(prev => ({
-                            ...prev,
-                            [match.id]: { ...prev[match.id], advance_on_penalties: e.target.value }
-                          }))}
-                          className="bg-bg-primary border border-accent-gold/30 rounded px-3 py-1 text-sm focus:outline-none focus:border-accent-gold"
+                        <div className="flex flex-col sm:flex-row items-center gap-2">
+                          <input 
+                            placeholder="Flag Fora (Emoji)" 
+                            className="w-full sm:w-16 bg-bg-primary border border-border rounded px-2 py-2 text-center"
+                            value={matchupEdits[match.id]?.flag_away ?? ''}
+                            onChange={(e) => setMatchupEdits(prev => ({...prev, [match.id]: {...prev[match.id], flag_away: e.target.value}}))}
+                          />
+                          <input 
+                            placeholder="Time Fora" 
+                            className="w-full sm:flex-1 bg-bg-primary border border-border rounded px-2 py-2"
+                            value={matchupEdits[match.id]?.team_away ?? ''}
+                            onChange={(e) => setMatchupEdits(prev => ({...prev, [match.id]: {...prev[match.id], team_away: e.target.value}}))}
+                          />
+                        </div>
+                        <button
+                          onClick={() => handleUpdateMatchup(match.id)}
+                          disabled={saving[match.id]}
+                          className="btn-gold !py-2 mt-2"
                         >
-                          <option value="">-- Selecione --</option>
-                          <option value={match.team_home}>{match.team_home}</option>
-                          <option value={match.team_away}>{match.team_away}</option>
-                        </select>
+                          {saving[match.id] ? 'Salvando...' : 'Salvar Times'}
+                        </button>
                       </div>
+                    ) : (
+                      <>
+                        {isKnockout && (
+                          <div className="flex justify-between items-center mb-3">
+                            <span className="text-xs font-bold text-accent-gold">{match.cup_group}</span>
+                            <button
+                              onClick={() => {
+                                setMatchupEdits(prev => ({
+                                  ...prev, 
+                                  [match.id]: { team_home: match.team_home, flag_home: match.flag_home, team_away: match.team_away, flag_away: match.flag_away }
+                                }))
+                                setEditingMatchup(prev => ({ ...prev, [match.id]: true }))
+                              }}
+                              className="text-xs bg-bg-primary/50 border border-border rounded px-2 py-1 hover:border-accent-gold text-text-muted hover:text-accent-gold transition-colors"
+                            >
+                              Editar Times
+                            </button>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-4">
+                          {/* Home Team */}
+                          <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+                            <span className="font-medium text-text-primary truncate hidden sm:block">{match.team_home}</span>
+                            {match.flag_home?.startsWith('http') ? (
+                              <img src={match.flag_home} alt={match.team_home} className="w-6 h-4 object-cover rounded-sm shadow-sm" />
+                            ) : (
+                              <span className="text-xl">{match.flag_home}</span>
+                            )}
+                          </div>
+  
+                          {/* Score Inputs */}
+                          <div className="flex items-center gap-2 flex-col">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                min="0"
+                                max="20"
+                                value={currentResult.home ?? ''}
+                                onChange={(e) =>
+                                  setResults(prev => ({
+                                    ...prev,
+                                    [match.id]: { ...prev[match.id], home: e.target.value },
+                                  }))
+                                }
+                                className="w-12 h-10 text-center bg-bg-primary border border-border rounded font-black text-lg focus:outline-none focus:border-accent-gold"
+                              />
+                              <span className="text-text-muted font-bold text-lg">×</span>
+                              <input
+                                type="number"
+                                min="0"
+                                max="20"
+                                value={currentResult.away ?? ''}
+                                onChange={(e) =>
+                                  setResults(prev => ({
+                                    ...prev,
+                                    [match.id]: { ...prev[match.id], away: e.target.value },
+                                  }))
+                                }
+                                className="w-12 h-10 text-center bg-bg-primary border border-border rounded font-black text-lg focus:outline-none focus:border-accent-gold"
+                              />
+                            </div>
+                          </div>
+  
+                          {/* Away Team */}
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            {match.flag_away?.startsWith('http') ? (
+                              <img src={match.flag_away} alt={match.team_away} className="w-6 h-4 object-cover rounded-sm shadow-sm" />
+                            ) : (
+                              <span className="text-xl">{match.flag_away}</span>
+                            )}
+                            <span className="font-medium text-text-primary truncate hidden sm:block">{match.team_away}</span>
+                          </div>
+  
+                          {/* Save Button */}
+                          <button
+                            onClick={() => handleSaveResult(match.id)}
+                            disabled={saving[match.id]}
+                            className="btn-gold !px-4 !py-2 text-sm whitespace-nowrap"
+                          >
+                            {saving[match.id] ? '...' : match.score_home !== null ? 'Atualizar' : 'Salvar'}
+                          </button>
+                        </div>
+  
+                        {/* Penalty Selector for Knockout Draws */}
+                        {isKnockout && isDraw && (
+                          <div className="mt-4 pt-3 border-t border-border flex justify-center items-center gap-3">
+                            <span className="text-xs font-bold text-accent-gold uppercase">Vencedor nos Pênaltis:</span>
+                            <select
+                              value={currentResult.advance_on_penalties ?? ''}
+                              onChange={(e) => setResults(prev => ({
+                                ...prev,
+                                [match.id]: { ...prev[match.id], advance_on_penalties: e.target.value }
+                              }))}
+                              className="bg-bg-primary border border-accent-gold/30 rounded px-3 py-1 text-sm focus:outline-none focus:border-accent-gold"
+                            >
+                              <option value="">-- Selecione --</option>
+                              <option value={match.team_home}>{match.team_home}</option>
+                              <option value={match.team_away}>{match.team_away}</option>
+                            </select>
+                          </div>
+                        )}
+  
+                        {/* Mobile team names */}
+                        <div className="flex justify-between mt-2 sm:hidden text-xs text-text-muted">
+                          <span>{match.team_home}</span>
+                          <span>{match.team_away}</span>
+                        </div>
+                      </>
                     )}
-
-                    {/* Mobile team names */}
-                    <div className="flex justify-between mt-2 sm:hidden text-xs text-text-muted">
-                      <span>{match.team_home}</span>
-                      <span>{match.team_away}</span>
-                    </div>
                   </div>
                 )
               })}

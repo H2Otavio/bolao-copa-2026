@@ -27,7 +27,8 @@ export default function LoginPage() {
     setError('')
     try {
       await login(email, password)
-      navigate('/palpites')
+      // Removemos o navigate('/palpites') daqui para evitar condition race com o ProtectedRoute.
+      // O useEffect(..., [user]) fará o redirecionamento assim que o estado 'user' for atualizado.
     } catch (err) {
       setError(err.message)
     } finally {

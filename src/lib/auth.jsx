@@ -167,7 +167,14 @@ export function AuthProvider({ children }) {
       password
     })
 
-    if (authError) throw new Error('E-mail ou senha incorretos.')
+    if (authError) {
+      // Exibe a mensagem real do Supabase para sabermos o que está acontecendo
+      throw new Error('Erro de login: ' + authError.message)
+    }
+
+    if (!authData.user) {
+      throw new Error('Erro desconhecido: Usuário não retornado pelo Supabase.')
+    }
 
     // 2. Busca perfil
     const { data: userData, error: userError } = await supabase
@@ -176,8 +183,12 @@ export function AuthProvider({ children }) {
       .eq('auth_id', authData.user.id)
       .maybeSingle()
 
-    if (userError || !userData) {
-      // Usuário logou mas não tem perfil? Erro estranho, possivelmente os antigos sem elo
+    if (userError) {
+      console.error('userError no login:', userError)
+      throw new Error('Erro ao buscar perfil: ' + userError.message)
+    }
+    
+    if (!userData) {
       throw new Error('Perfil não encontrado para este e-mail. Peça ao Admin para migrar sua conta.')
     }
 

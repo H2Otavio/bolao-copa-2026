@@ -75,13 +75,58 @@ async function syncScores() {
   console.log(`Synchronization step complete. Updated ${updatedCount} matches from external API.`);
 
   // --- BEGIN STATS & RANKING CALCULATION ---
-  console.log("Fetching pre-calculated rankings from Supabase View (0% Egress)...");
+  console.log("Calculating rankings locally to include knockout team bonuses...");
 
-  const { data: userScores, error: urError } = await supabase.from('vw_user_rankings').select('*');
-  
-  if (urError) {
-    console.error("Error fetching vw_user_rankings:", urError);
-  } else if (userScores) {
+  const { data: allMatchesFinal } = await supabase.from('matches').select('*').order('match_number');
+  const allMatches = allMatchesFinal || [];
+
+  const { data: allUsers } = await supabase.from('users').select('id, name, league_id');
+  const users = allUsers || [];
+
+  const { data: allPredictions } = await supabase.from('predictions').select('*');
+  const predictions = allPredictions || [];
+
+  const userScores = [];
+
+  for (const user of users) {
+    const userPreds = predictions.filter(p => p.user_id === user.id);
+    const bracket = generateKnockoutBracket(allMatches, userPreds);
+    
+    let totalPoints = 0;
+    let exactBothPoints = 0;
+    let correctResults = 0;
+
+    for (const match of allMatches) {
+      const pred = userPreds.find(p => p.match_id === match.id);
+      if (!pred) continue;
+
+      const isKnockout = match.cup_group && match.cup_group.length > 1;
+      
+      // Inject the dynamically calculated simulated teams so scoring.js can use them
+      if (isKnockout && bracket && bracket[match.match_number]) {
+        pred.simulated_team_home = bracket[match.match_number].team_home;
+        pred.simulated_team_away = bracket[match.match_number].team_away;
+      }
+
+      const score = calcScore(pred, match);
+      
+      totalPoints += score.total;
+      if (score.exactBothPoints > 0) exactBothPoints += 1;
+      if (score.winnerPoints > 0) correctResults += 1;
+    }
+
+    userScores.push({
+      id: user.id,
+      name: user.name,
+      league_id: user.league_id,
+      totalPoints,
+      exactBothPoints,
+      correctResults,
+      avgOrder: 0 // Simplification for now, or you can calculate it based on submission times if needed
+    });
+  }
+
+  if (userScores) {
     const sortRanking = (rankingArray) => {
       rankingArray.sort((a, b) => {
         if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
@@ -122,14 +167,7 @@ async function syncScores() {
   if (isDailyStatsUpdate) {
     console.log("Calculating global stats (Daily Heavy Calculation)...");
     
-    const { data: allMatchesFinal } = await supabase.from('matches').select('*').order('match_number');
-    const allMatches = allMatchesFinal || [];
-
-    const { data: allUsers } = await supabase.from('users').select('id');
-    const users = allUsers || [];
-
-    const { data: allPredictions } = await supabase.from('predictions').select('id, user_id, match_id, score_home, score_away, is_simulated, simulated_team_home, simulated_team_away, advance_on_penalties, updated_at');
-    const predictions = allPredictions || [];
+    // Data already fetched above
 
     const statsMap = {};
     
