@@ -202,13 +202,22 @@ export function generateKnockoutBracket(allMatches, allPredictions) {
       }
     }
     
-    if (pred.score_home > pred.score_away) return { id: sim.team_home, flag: sim.flag_home }
-    if (pred.score_away > pred.score_home) return { id: sim.team_away, flag: sim.flag_away }
+    const homeTeam = pred.is_simulated ? sim.team_home : match.team_home
+    const homeFlag = pred.is_simulated ? sim.flag_home : match.flag_home
+    const awayTeam = pred.is_simulated ? sim.team_away : match.team_away
+    const awayFlag = pred.is_simulated ? sim.flag_away : match.flag_away
+
+    if (pred.score_home > pred.score_away) return { id: homeTeam, flag: homeFlag }
+    if (pred.score_away > pred.score_home) return { id: awayTeam, flag: awayFlag }
     
     // Draw -> resolved by penalties
-    if (pred.advance_on_penalties === sim.team_home) return { id: sim.team_home, flag: sim.flag_home }
-    if (pred.advance_on_penalties === sim.team_away) return { id: sim.team_away, flag: sim.flag_away }
+    if (pred.advance_on_penalties === homeTeam) return { id: homeTeam, flag: homeFlag }
+    if (pred.advance_on_penalties === awayTeam) return { id: awayTeam, flag: awayFlag }
     
+    // Fallback if penalties logic failed but we have a winner
+    if (pred.advance_on_penalties === pred.simulated_team_home) return { id: homeTeam, flag: homeFlag }
+    if (pred.advance_on_penalties === pred.simulated_team_away) return { id: awayTeam, flag: awayFlag }
+
     return null // Needs penalty resolution
   }
 
