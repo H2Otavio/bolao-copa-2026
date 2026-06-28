@@ -111,12 +111,12 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
     triggerSave(homeScore, awayScore, winnerId)
   }
 
-  // Calculate points if there's a result
-  const scoreResult = prediction
+  // Calculate points if there's a result or knockout team points
+  const scoreResult = (prediction || isKnockout)
     ? calcScore(
         { 
-          ...prediction, 
-          is_simulated: isSimulatedView || prediction.is_simulated,
+          ...(prediction || { score_home: null, score_away: null }), 
+          is_simulated: isSimulatedView || (prediction ? prediction.is_simulated : true),
           simulated_team_home: displaySimTeamHome,
           simulated_team_away: displaySimTeamAway
         },

@@ -97,10 +97,20 @@ async function syncScores() {
     let correctResults = 0;
 
     for (const match of allMatches) {
-      const pred = userPreds.find(p => p.match_id === match.id);
-      if (!pred) continue;
+      let pred = userPreds.find(p => p.match_id === match.id);
 
       const isKnockout = match.cup_group && match.cup_group.length > 1;
+
+      if (!pred) {
+        if (!isKnockout) continue;
+        // For knockout matches, missing predictions still earn team points
+        pred = {
+          match_id: match.id,
+          score_home: null,
+          score_away: null,
+          is_simulated: true
+        };
+      }
       
       // Inject the dynamically calculated simulated teams so scoring.js can use them
       if (isKnockout && bracket && bracket[match.match_number]) {
