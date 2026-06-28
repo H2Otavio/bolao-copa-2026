@@ -108,7 +108,7 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
   }
 
   // Calculate points if there's a result
-  const scoreResult = hasResult && prediction
+  const scoreResult = prediction
     ? calcScore(
         { 
           ...prediction, 
@@ -276,25 +276,31 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
 
       
 
-      {/* Result + Points row (shown when match has real result) */}
-      {hasResult && (
+      {/* Result + Points row (shown when match has real result OR when we have team points) */}
+      {(hasResult || (scoreResult && scoreResult.teamPoints > 0)) && (
         <div className="mt-3 pt-3 border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-text-muted">Resultado:</span>
-            <span className="text-sm font-bold text-accent-green-light">
-              {match.score_home} × {match.score_away}
-            </span>
-            {liveData && !liveData.finished && (
-              <span className="text-xs font-bold text-red-500 animate-pulse ml-2">
-                🔴 Ao Vivo {liveData.time_elapsed ? `(${liveData.time_elapsed}')` : ''}
+          {hasResult ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-text-muted">Resultado:</span>
+              <span className="text-sm font-bold text-accent-green-light">
+                {match.score_home} × {match.score_away}
               </span>
-            )}
-            {liveData && liveData.finished && (
-              <span className="text-xs font-bold text-text-muted ml-2">
-                (Finalizado)
-              </span>
-            )}
-          </div>
+              {liveData && !liveData.finished && (
+                <span className="text-xs font-bold text-red-500 animate-pulse ml-2">
+                  🔴 Ao Vivo {liveData.time_elapsed ? `(${liveData.time_elapsed}')` : ''}
+                </span>
+              )}
+              {liveData && liveData.finished && (
+                <span className="text-xs font-bold text-text-muted ml-2">
+                  (Finalizado)
+                </span>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-text-muted">Aguardando resultado</span>
+            </div>
+          )}
           {scoreResult && (
             <div className="flex items-center gap-3">
               <span className="text-xs text-text-muted">{scoreResult.details}</span>

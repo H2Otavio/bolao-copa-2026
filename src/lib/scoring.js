@@ -19,15 +19,6 @@
  * @returns {Object} { total, winnerPoints, exactOnePoints, exactBothPoints, teamPoints, details }
  */
 export function calcScore(prediction, match) {
-  if (
-    match.score_home === null ||
-    match.score_away === null ||
-    prediction.score_home === null ||
-    prediction.score_away === null
-  ) {
-    return { total: 0, winnerPoints: 0, exactOnePoints: 0, exactBothPoints: 0, teamPoints: 0, details: 'Aguardando resultado' }
-  }
-
   let winnerPoints = 0
   let exactOnePoints = 0
   let exactBothPoints = 0
@@ -40,8 +31,8 @@ export function calcScore(prediction, match) {
   let teamsMatchPerfectly = false
   if (isKnockout) {
     let teamsHit = 0
-    if (prediction.simulated_team_home === match.team_home) teamsHit++
-    if (prediction.simulated_team_away === match.team_away) teamsHit++
+    if (match.team_home && prediction.simulated_team_home === match.team_home) teamsHit++
+    if (match.team_away && prediction.simulated_team_away === match.team_away) teamsHit++
 
     if (teamsHit > 0) {
       teamPoints = teamsHit * 2
@@ -51,6 +42,16 @@ export function calcScore(prediction, match) {
     if (teamsHit === 2) {
       teamsMatchPerfectly = true
     }
+  }
+
+  if (
+    match.score_home === null ||
+    match.score_away === null ||
+    prediction.score_home === null ||
+    prediction.score_away === null
+  ) {
+    if (details.length === 0) details.push('Aguardando resultado');
+    return { total: teamPoints, winnerPoints: 0, exactOnePoints: 0, exactBothPoints: 0, teamPoints, details: details.join(' | ') };
   }
 
   // 2. Evaluate Score Points
