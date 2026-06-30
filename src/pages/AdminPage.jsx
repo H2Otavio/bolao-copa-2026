@@ -141,10 +141,21 @@ export default function AdminPage() {
     }
     
     const userIds = users.map(u => u.id)
-    const { data: predictions } = await supabase
-      .from('predictions')
-      .select('user_id, match_id')
-      .in('user_id', userIds)
+    let allPredictions = []
+    let page = 0
+    while (true) {
+      const { data: pData } = await supabase
+        .from('predictions')
+        .select('user_id, match_id')
+        .in('user_id', userIds)
+        .range(page * 1000, (page + 1) * 1000 - 1)
+      
+      if (!pData || pData.length === 0) break
+      allPredictions.push(...pData)
+      if (pData.length < 1000) break
+      page++
+    }
+    const predictions = allPredictions
       
     let matchesData = allMatchesData
     if (matchesData.length === 0) {

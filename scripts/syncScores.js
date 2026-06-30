@@ -51,10 +51,20 @@ async function syncScores() {
           const match = dbMatches.find(m => m.match_number === parseInt(apiId, 10) || (m.team_home === fixture.home_team_en && m.team_away === fixture.away_team_en));
 
           if (match) {
-            const needsUpdate = match.score_home !== scoreHome || match.score_away !== scoreAway;
+            let penaltyWinner = match.advance_on_penalties || null;
+            if (fixture.home_penalty_score !== undefined && fixture.away_penalty_score !== undefined) {
+              const homePen = parseInt(fixture.home_penalty_score, 10);
+              const awayPen = parseInt(fixture.away_penalty_score, 10);
+              if (!isNaN(homePen) && !isNaN(awayPen)) {
+                if (homePen > awayPen) penaltyWinner = match.team_home;
+                else if (awayPen > homePen) penaltyWinner = match.team_away;
+              }
+            }
+
+            const needsUpdate = match.score_home !== scoreHome || match.score_away !== scoreAway || match.advance_on_penalties !== penaltyWinner;
 
             if (needsUpdate) {
-              const updatePayload = { score_home: scoreHome, score_away: scoreAway };
+              const updatePayload = { score_home: scoreHome, score_away: scoreAway, advance_on_penalties: penaltyWinner };
               const { error: updateError } = await supabase.from('matches').update(updatePayload).eq('id', match.id);
 
               if (updateError) {
@@ -83,7 +93,15 @@ async function syncScores() {
   const { data: allUsers } = await supabase.from('users').select('id, name, league_id');
   const users = allUsers || [];
 
-  const { data: allPredictions } = await supabase.from('predictions').select('*');
+  let allPredictions = [];
+  let page = 0;
+  while (true) {
+    const { data: pData } = await supabase.from('predictions').select('*').range(page * 1000, (page + 1) * 1000 - 1);
+    if (!pData || pData.length === 0) break;
+    allPredictions.push(...pData);
+    if (pData.length < 1000) break;
+    page++;
+  }
   const predictions = allPredictions || [];
 
   const userScores = [];
