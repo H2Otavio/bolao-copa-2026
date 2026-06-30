@@ -13,6 +13,7 @@ import AdminPage from './pages/AdminPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import ResetPasswordConfirmPage from './pages/ResetPasswordConfirmPage'
 import UpdatePasswordPage from './pages/UpdatePasswordPage'
+import UserHistoryPage from './pages/UserHistoryPage'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -66,6 +67,16 @@ export default function App() {
           <ProtectedRoute>
             <Layout>
               <SchedulePage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/historico/:userId"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <UserHistoryPage />
             </Layout>
           </ProtectedRoute>
         }

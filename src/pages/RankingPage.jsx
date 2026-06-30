@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 import { calcScore } from '../lib/scoring'
@@ -78,9 +79,10 @@ export default function RankingPage() {
       ) : (
         <div className="space-y-3 animate-slide-up">
           {ranking.map((player, index) => (
-            <div
+            <Link
+              to={`/historico/${player.id}`}
               key={player.id}
-              className={`glass-card p-4 md:p-5 flex items-center gap-4 transition-all duration-300 ${
+              className={`block cursor-pointer glass-card p-4 md:p-5 flex items-center gap-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20 hover:border-accent-green/30 ${
                 player.id === user.id ? 'ring-2 ring-accent-green/50 bg-accent-green/5' : ''
               } ${index < 3 ? 'border-accent-gold/20' : ''}`}
             >
@@ -116,7 +118,7 @@ export default function RankingPage() {
                 </p>
                 <p className="text-xs text-text-muted">pontos</p>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
