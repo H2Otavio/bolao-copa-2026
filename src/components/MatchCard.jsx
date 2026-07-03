@@ -29,8 +29,9 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
   let isSimulatedView = false
   let mismatchWarning = false
   let teamsHit = -1;
+  let isLockedBecauseTBD = false;
 
-  if (simulatedMatch) {
+  if (simulatedMatch && match.cup_group === 'R32') {
     if (!isRealMatchReady) {
       displayTeamHome = simulatedMatch.team_home
       displayFlagHome = simulatedMatch.flag_home
@@ -53,6 +54,8 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
         mismatchWarning = true;
       }
     }
+  } else if (isKnockout && match.cup_group !== 'R32' && !isRealMatchReady) {
+    isLockedBecauseTBD = true;
   }
 
   const displaySimTeamHome = simulatedMatch ? simulatedMatch.team_home : prediction?.simulated_team_home
@@ -177,8 +180,6 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
       hasResult ? 'border-accent-green/20' : ''
     } ${saved ? 'ring-2 ring-accent-green/40' : ''}`}>
       
-      {/* Simulation Mismatch Toast removed as per user request to only show toasts on real matches */}
-
       {/* Knockout Validation Toast */}
       {teamsHit !== -1 && (
         <div className={`mb-4 border rounded-lg p-3 text-center animate-fade-in ${
@@ -248,22 +249,30 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
               type="number"
               min="0"
               max="20"
+              disabled={hasStarted || isLockedBecauseTBD}
               value={homeScore}
-              onChange={handleHomeChange}
-              disabled={hasStarted}
-              className={hasStarted ? 'score-input-locked' : 'score-input'}
-              placeholder="–"
+              onChange={(e) => {
+                setHomeScore(e.target.value)
+                triggerSave(e.target.value, awayScore)
+              }}
+              className={`w-12 h-14 md:w-14 md:h-16 text-center text-xl md:text-2xl font-black bg-bg-card border-2 rounded-xl focus:outline-none transition-all ${
+                hasStarted || isLockedBecauseTBD ? 'opacity-50 cursor-not-allowed border-border' : 'border-border focus:border-accent-green focus:shadow-[0_0_15px_rgba(30,215,96,0.3)]'
+              }`}
             />
-            <span className="text-text-muted font-bold text-lg">×</span>
+            <span className="text-text-muted font-bold md:text-lg">X</span>
             <input
               type="number"
               min="0"
               max="20"
+              disabled={hasStarted || isLockedBecauseTBD}
               value={awayScore}
-              onChange={handleAwayChange}
-              disabled={hasStarted}
-              className={hasStarted ? 'score-input-locked' : 'score-input'}
-              placeholder="–"
+              onChange={(e) => {
+                setAwayScore(e.target.value)
+                triggerSave(homeScore, e.target.value)
+              }}
+              className={`w-12 h-14 md:w-14 md:h-16 text-center text-xl md:text-2xl font-black bg-bg-card border-2 rounded-xl focus:outline-none transition-all ${
+                hasStarted || isLockedBecauseTBD ? 'opacity-50 cursor-not-allowed border-border' : 'border-border focus:border-accent-green focus:shadow-[0_0_15px_rgba(30,215,96,0.3)]'
+              }`}
             />
           </div>
         </div>
@@ -280,6 +289,15 @@ export default function MatchCard({ match, prediction, onSave, saving, saved, li
           </span>
         </div>
       </div>
+
+      {/* Locked matches info */}
+      {isLockedBecauseTBD && (
+        <div className="text-center mt-3 animate-fade-in">
+           <span className="text-xs text-accent-gold bg-accent-gold/10 border border-accent-gold/20 px-3 py-1 rounded-full font-semibold">
+             Aguardando times reais
+           </span>
+        </div>
+      )}
 
       {/* Penalties Tie-breaker (Mata-mata) */}
       {isKnockout && homeScore !== '' && awayScore !== '' && parseInt(homeScore) === parseInt(awayScore) && (

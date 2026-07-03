@@ -242,13 +242,21 @@ export default function PredictionsPage() {
     setPredCounts(counts)
 
     const isGroupUnlocked = (group, total) => (counts[group] || 0) >= total
+    
+    const hasAnyRealTeam = (phase) => {
+      return allMatches.some(m => {
+        if (m.cup_group !== phase) return false
+        return !placeholderRegex.test(m.team_home || '') || !placeholderRegex.test(m.team_away || '')
+      })
+    }
+
     setPhaseUnlocked({
       R32: knockoutUnlocked,
-      R16: knockoutUnlocked && isGroupUnlocked('R32', 16),
-      QF: knockoutUnlocked && isGroupUnlocked('R32', 16) && isGroupUnlocked('R16', 8),
-      SF: knockoutUnlocked && isGroupUnlocked('R32', 16) && isGroupUnlocked('R16', 8) && isGroupUnlocked('QF', 4),
-      '3RD': knockoutUnlocked && isGroupUnlocked('R32', 16) && isGroupUnlocked('R16', 8) && isGroupUnlocked('QF', 4) && isGroupUnlocked('SF', 2),
-      FINAL: knockoutUnlocked && isGroupUnlocked('R32', 16) && isGroupUnlocked('R16', 8) && isGroupUnlocked('QF', 4) && isGroupUnlocked('SF', 2),
+      R16: knockoutUnlocked && hasAnyRealTeam('R16'),
+      QF: knockoutUnlocked && hasAnyRealTeam('QF'),
+      SF: knockoutUnlocked && hasAnyRealTeam('SF'),
+      '3RD': knockoutUnlocked && hasAnyRealTeam('3RD'),
+      FINAL: knockoutUnlocked && hasAnyRealTeam('FINAL'),
     })
 
   }, [allPredictionsMap, allMatches, knockoutUnlocked, simulatedBracket])
