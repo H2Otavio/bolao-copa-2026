@@ -16,6 +16,7 @@ export default function StatsPage() {
   const [advancedStats, setAdvancedStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [totalVoters, setTotalVoters] = useState(0)
+  const [phaseUnlocked, setPhaseUnlocked] = useState({})
 
   const getFlagUrl = (flag) => {
     if (!flag) return null
@@ -83,6 +84,22 @@ export default function StatsPage() {
           }
         })
       setStats(matchStats)
+
+      const placeholderRegex = /1[A-L]|2[A-L]|3rd|Vencedor|Winner|Perdedor|Loser|Runner-up/
+      const hasAnyRealTeam = (phase) => {
+        const phaseStats = cachedStats[phase]
+        if (!phaseStats) return false
+        return phaseStats.some(m => !placeholderRegex.test(m.team_home || '') || !placeholderRegex.test(m.team_away || ''))
+      }
+
+      setPhaseUnlocked({
+        R32: true,
+        R16: hasAnyRealTeam('R16'),
+        QF: hasAnyRealTeam('QF'),
+        SF: hasAnyRealTeam('SF'),
+        '3RD': hasAnyRealTeam('3RD'),
+        FINAL: hasAnyRealTeam('FINAL'),
+      })
     } catch (err) {
       console.error('Error fetching stats from cache:', err)
     } finally {
@@ -128,11 +145,23 @@ export default function StatsPage() {
         <p className="text-text-secondary">Estatísticas Globais · {totalVoters} participantes</p>
       </div>
 
+      {advancedStats && advancedStats.podium && (
+        <div className="mb-8">
+          <h2 className="text-center font-bold text-accent-green mb-4">Mais Votados (Pódio)</h2>
+          <div className="flex flex-col md:flex-row gap-4">
+            {renderPodiumPosition('2º Lugar', advancedStats.podium.runnerUp, 'text-gray-400', 'border-gray-500')}
+            {renderPodiumPosition('Campeão', advancedStats.podium.champion, 'text-accent-gold', 'border-accent-gold')}
+            {renderPodiumPosition('3º Lugar', advancedStats.podium.thirdPlace, 'text-amber-600', 'border-amber-700')}
+          </div>
+        </div>
+      )}
+
       <GroupTabs
         groups={CUP_GROUPS}
         selected={selectedGroup}
         onSelect={setSelectedGroup}
         knockoutUnlocked={true}
+        phaseUnlocked={phaseUnlocked}
       />
 
       {loading ? (
