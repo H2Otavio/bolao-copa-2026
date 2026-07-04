@@ -7,9 +7,10 @@ import MatchCard from '../components/MatchCard'
 import { useLiveScores } from '../lib/api'
 import { generateKnockoutBracket } from '../lib/simulator'
 import GroupStandingsTable from '../components/GroupStandingsTable'
+import ExtraPredictions from '../components/ExtraPredictions'
 import { parseMatchDate } from '../lib/dateUtils'
 
-const CUP_GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'R32', 'R16', 'QF', 'SF', '3RD', 'FINAL']
+const CUP_GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'R32', 'R16', 'QF', 'SF', '3RD', 'FINAL', 'final_awards']
 
 export default function PredictionsPage() {
   const { user, league } = useAuth()
@@ -268,29 +269,63 @@ export default function PredictionsPage() {
         <p className="text-text-secondary">Selecione a fase e preencha seus placares</p>
       </div>
 
-      <GroupTabs
-        groups={CUP_GROUPS}
-        selected={selectedGroup}
-        onSelect={setSelectedGroup}
-        predCounts={predCounts}
-        matchesPerGroup={selectedGroup.length > 1 ? 0 : 6}
-        knockoutUnlocked={knockoutUnlocked}
-        phaseUnlocked={phaseUnlocked}
-      />
+      <div className="flex p-1 bg-bg-card rounded-xl border border-border mb-4">
+        <button
+          onClick={() => setSelectedGroup('A')}
+          className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
+            selectedGroup.length === 1 ? 'bg-accent-green text-white shadow-md' : 'text-text-muted hover:text-text-primary'
+          }`}
+        >
+          Fase de Grupos
+        </button>
+        <button
+          onClick={() => setSelectedGroup('R32')}
+          disabled={!knockoutUnlocked}
+          className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
+            selectedGroup.length > 1 && selectedGroup !== 'final_awards' ? 'bg-accent-green text-white shadow-md' : 'text-text-muted hover:text-text-primary'
+          } ${!knockoutUnlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          Mata-Mata {!knockoutUnlocked && '🔒'}
+        </button>
+        <button
+          onClick={() => setSelectedGroup('final_awards')}
+          className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
+            selectedGroup === 'final_awards' ? 'bg-accent-green text-white shadow-md' : 'text-text-muted hover:text-text-primary'
+          }`}
+        >
+          Torneio
+        </button>
+      </div>
 
-      {loading ? (
+      {selectedGroup !== 'final_awards' && (
+        <GroupTabs
+          groups={CUP_GROUPS}
+          selected={selectedGroup}
+          onSelect={setSelectedGroup}
+          predCounts={predCounts}
+          matchesPerGroup={selectedGroup.length > 1 ? 0 : 6}
+          knockoutUnlocked={knockoutUnlocked}
+          phaseUnlocked={phaseUnlocked}
+        />
+      )}
+
+      {loading && selectedGroup !== 'final_awards' ? (
         <div className="flex justify-center py-20">
           <div className="w-10 h-10 border-4 border-accent-green border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
         <div className="space-y-4 mt-6 animate-slide-up">
-          {/* Tabela de Classificação para Fase de Grupos */}
-          {selectedGroup.length === 1 && (
-            <GroupStandingsTable 
-              groupMatches={displayMatches} 
-              allPredictionsMap={allPredictionsMap} 
-            />
-          )}
+          {selectedGroup === 'final_awards' ? (
+            <ExtraPredictions />
+          ) : (
+            <>
+              {/* Tabela de Classificação para Fase de Grupos */}
+              {selectedGroup.length === 1 && (
+                <GroupStandingsTable 
+                  groupMatches={displayMatches} 
+                  allPredictionsMap={allPredictionsMap} 
+                />
+              )}
 
           {displayMatches.map((match) => {
             // Merge live scores
@@ -314,10 +349,12 @@ export default function PredictionsPage() {
               />
             )
           })}
-          {displayMatches.length === 0 && (
-            <div className="glass-card p-12 text-center">
-              <p className="text-text-muted text-lg">Nenhum jogo encontrado para {selectedGroup}.</p>
-            </div>
+              {displayMatches.length === 0 && (
+                <div className="glass-card p-12 text-center">
+                  <p className="text-text-muted text-lg">Nenhum jogo encontrado para {selectedGroup}.</p>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
