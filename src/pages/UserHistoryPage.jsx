@@ -3,7 +3,6 @@ import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { calcScore } from '../lib/scoring'
 import { translateTeam } from '../lib/countries'
-import { generateKnockoutBracket } from '../lib/simulator'
 
 export default function UserHistoryPage() {
   const { userId } = useParams()
@@ -29,7 +28,6 @@ export default function UserHistoryPage() {
           .eq('user_id', userId)
 
         const allPredictions = pData || []
-        const bracket = generateKnockoutBracket(matches || [], allPredictions)
 
         const historyItems = []
 
@@ -58,10 +56,7 @@ export default function UserHistoryPage() {
             pred = { ...pred }
           }
 
-          if (isKnockout && bracket && bracket[match.match_number]) {
-            pred.simulated_team_home = bracket[match.match_number].team_home
-            pred.simulated_team_away = bracket[match.match_number].team_away
-          }
+          // Simulate logic removed
 
           const score = calcScore(pred, match)
           
@@ -120,7 +115,6 @@ export default function UserHistoryPage() {
             const s = item.score
 
             const isKnockout = m.cup_group && m.cup_group.length > 1
-            const predictedTeamsMatch = !isKnockout || (!p.is_simulated || (p.simulated_team_home === m.team_home && p.simulated_team_away === m.team_away))
 
             return (
               <div key={m.id} className={`glass-card p-4 md:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-300 border border-transparent hover:border-border`}>
@@ -150,11 +144,7 @@ export default function UserHistoryPage() {
                   <div className="text-sm bg-black/20 p-2 rounded-lg inline-block border border-white/5">
                     {p ? (
                       <div>
-                        {isKnockout && p.is_simulated && !predictedTeamsMatch ? (
-                          <div className="text-text-secondary">
-                            Seu simulador previa: <span className="font-semibold text-white">{translateTeam(p.simulated_team_home)} {p.score_home} x {p.score_away} {translateTeam(p.simulated_team_away)}</span>
-                          </div>
-                        ) : p.score_home !== null && p.score_away !== null ? (
+                        {p.score_home !== null && p.score_away !== null ? (
                           <div className="text-text-secondary">
                             Palpite: <span className="font-semibold text-white">{p.score_home} x {p.score_away}</span>
                             {p.advance_on_penalties && (
