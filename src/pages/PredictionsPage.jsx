@@ -18,8 +18,10 @@ export default function PredictionsPage() {
   const location = useLocation()
 
   // Initialize group from query param if available
-  const initialGroup = new URLSearchParams(location.search).get('group') || 'R32'
-  const [selectedGroup, setSelectedGroup] = useState(initialGroup)
+  const [selectedGroup, setSelectedGroup] = useState(() => {
+    const params = new URLSearchParams(location.search)
+    return params.get('tab') === 'final_awards' ? 'final_awards' : (params.get('group') || 'R32')
+  })
 
   const [allMatches, setAllMatches] = useState([])
   const [allPredictionsMap, setAllPredictionsMap] = useState({})
@@ -269,45 +271,16 @@ export default function PredictionsPage() {
         <p className="text-text-secondary">Selecione a fase e preencha seus placares</p>
       </div>
 
-      <div className="flex p-1 bg-bg-card rounded-xl border border-border mb-4">
-        <button
-          onClick={() => setSelectedGroup('A')}
-          className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
-            selectedGroup.length === 1 ? 'bg-accent-green text-white shadow-md' : 'text-text-muted hover:text-text-primary'
-          }`}
-        >
-          Fase de Grupos
-        </button>
-        <button
-          onClick={() => setSelectedGroup('R32')}
-          disabled={!knockoutUnlocked}
-          className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
-            selectedGroup.length > 1 && selectedGroup !== 'final_awards' ? 'bg-accent-green text-white shadow-md' : 'text-text-muted hover:text-text-primary'
-          } ${!knockoutUnlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-        >
-          Mata-Mata {!knockoutUnlocked && '🔒'}
-        </button>
-        <button
-          onClick={() => setSelectedGroup('final_awards')}
-          className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
-            selectedGroup === 'final_awards' ? 'bg-accent-green text-white shadow-md' : 'text-text-muted hover:text-text-primary'
-          }`}
-        >
-          Torneio
-        </button>
-      </div>
-
-      {selectedGroup !== 'final_awards' && (
-        <GroupTabs
-          groups={CUP_GROUPS}
-          selected={selectedGroup}
-          onSelect={setSelectedGroup}
-          predCounts={predCounts}
-          matchesPerGroup={selectedGroup.length > 1 ? 0 : 6}
-          knockoutUnlocked={knockoutUnlocked}
-          phaseUnlocked={phaseUnlocked}
-        />
-      )}
+      <GroupTabs
+        groups={CUP_GROUPS}
+        selected={selectedGroup}
+        onSelect={setSelectedGroup}
+        predCounts={predCounts}
+        matchesPerGroup={selectedGroup.length > 1 ? 0 : 6}
+        knockoutUnlocked={knockoutUnlocked}
+        phaseUnlocked={phaseUnlocked}
+        showTournamentTab={true}
+      />
 
       {loading && selectedGroup !== 'final_awards' ? (
         <div className="flex justify-center py-20">

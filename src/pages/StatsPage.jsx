@@ -6,14 +6,14 @@ import { useLiveScores } from '../lib/api'
 import { translateTeam } from '../lib/countries'
 import { generateKnockoutBracket } from '../lib/simulator'
 
-const CUP_GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'Mata-Mata']
+const CUP_GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'R32', 'R16', 'QF', 'SF', '3RD', 'FINAL']
 
 export default function StatsPage() {
   const { league } = useAuth()
   const { liveMatches } = useLiveScores()
   const [selectedGroup, setSelectedGroup] = useState('A')
   const [stats, setStats] = useState([])
-  const [knockoutStats, setKnockoutStats] = useState(null)
+  const [advancedStats, setAdvancedStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [totalVoters, setTotalVoters] = useState(0)
 
@@ -39,7 +39,7 @@ export default function StatsPage() {
   const fetchStats = useCallback(async () => {
     setLoading(true)
     setStats([])
-    setKnockoutStats(null)
+    setAdvancedStats(null)
 
     try {
       // 1. Fetch the cached stats map from app_cache
@@ -56,28 +56,18 @@ export default function StatsPage() {
 
       const cachedStats = cacheRow.value
       
-      // Update total voters based on the cached knockout stats or a default
-      if (cachedStats['Mata-Mata'] && cachedStats['Mata-Mata'].totalVoters) {
-        setTotalVoters(cachedStats['Mata-Mata'].totalVoters)
+      if (cachedStats['Mata-Mata']) {
+        setTotalVoters(cachedStats['Mata-Mata'].totalVoters || 0)
+        setAdvancedStats(cachedStats['Mata-Mata'])
       } else {
-        // Fallback: get total users count
         const { count } = await supabase.from('users').select('*', { count: 'exact', head: true })
         setTotalVoters(count || 0)
       }
 
-      if (selectedGroup === 'Mata-Mata') {
-        setKnockoutStats(cachedStats['Mata-Mata'])
-      } else {
-        // Group Stage Stats
-        const groupStats = cachedStats[selectedGroup]
-        if (!groupStats || groupStats.length === 0) {
-          setStats([])
-          return
-        }
-        
-        // Merge with live data if any match is currently happening
-        const matchStats = groupStats.map(match => {
-          const live = liveMatches[match.match_number]
+      const groupStats = cachedStats[selectedGroup] || []
+
+      const matchStats = groupStats.map(match => {
+        const live = liveMatches[match.match_number]
           let sh = match.score_home
           let sa = match.score_away
           if (live && (live.finished || live.score_home > 0 || live.score_away > 0)) {
@@ -92,8 +82,7 @@ export default function StatsPage() {
             liveData: live
           }
         })
-        setStats(matchStats)
-      }
+      setStats(matchStats)
     } catch (err) {
       console.error('Error fetching stats from cache:', err)
     } finally {
@@ -150,31 +139,111 @@ export default function StatsPage() {
         <div className="flex justify-center py-20">
           <div className="w-10 h-10 border-4 border-accent-green border-t-transparent rounded-full animate-spin" />
         </div>
-      ) : (
-        <div className="mt-6 animate-slide-up">
-          {selectedGroup === 'Mata-Mata' ? (
-            !knockoutStats ? (
+      ) : (        <div className="mt-6 animate-slide-up">
+          <div className="space-y-4">
+            {stats.map(match => (
+              <div key={match.id} className="glass-card p-5 md:p-6">
+                {/* Match Header */}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {getFlagUrl(match.flag_home) ? (
+                      <img src={getFlagUrl(match.flag_home)} alt={translateTeam(match.team_home)} className="w-8 h-5 md:w-10 md:h-7 object-cover rounded shadow-sm flex-shrink-0" />
+                    ) : (
+                      <span className="text-2xl">{match.flag_home}</span>
+                    )}
+                    <span className="font-semibold text-text-primary truncate">{translateTeam(match.team_home)}</span>
+                  </div>
+
+                  <div className="flex flex-col items-center justify-center mx-2">
+                    <span className="px-3 py-1 text-xs font-bold text-text-muted bg-bg-primary rounded-lg mb-1">VS</span>
+                    {match.score_home !== null && match.score_away !== null && (
+                      <span className={`text-xs font-bold whitespace-nowrap ${match.liveData && !match.liveData.finished ? 'text-red-500 animate-pulse' : 'text-accent-green-light'}`}>
+                        {match.score_home} - {match.score_away} {match.liveData && !match.liveData.finished ? "(Ao Vivo)" : ""}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3 flex-1 min-w-0 justify-end">
+                    <span className="font-semibold text-text-primary truncate">{translateTeam(match.team_away)}</span>
+                    {getFlagUrl(match.flag_away) ? (
+                      <img src={getFlagUrl(match.flag_away)} alt={translateTeam(match.team_away)} className="w-8 h-5 md:w-10 md:h-7 object-cover rounded shadow-sm flex-shrink-0" />
+                    ) : (
+                      <span className="text-2xl">{match.flag_away}</span>
+                    )}
+                  </div>
+                </div>
+
+                {match.totalPredictions === 0 ? (
+                  <p className="text-center text-text-muted text-sm py-2">Nenhum palpite registrado ainda</p>
+                ) : (
+                  <>
+                    {/* Odds Bar */}
+                    <div className="flex rounded-xl overflow-hidden h-10 mb-3 mt-4">
+                      {match.homeWinPct > 0 && (
+                        <div
+                          className="bg-gradient-to-r from-accent-green to-emerald-600 flex items-center justify-center text-xs font-bold text-white transition-all duration-500"
+                          style={{ width: `${match.homeWinPct}%` }}
+                        >
+                          {match.homeWinPct}%
+                        </div>
+                      )}
+                      {match.drawPct > 0 && (
+                        <div
+                          className="bg-gradient-to-r from-gray-500 to-gray-600 flex items-center justify-center text-xs font-bold text-white transition-all duration-500"
+                          style={{ width: `${match.drawPct}%` }}
+                        >
+                          {match.drawPct}%
+                        </div>
+                      )}
+                      {match.awayWinPct > 0 && (
+                        <div
+                          className="bg-gradient-to-r from-accent-gold to-amber-600 flex items-center justify-center text-xs font-bold text-white transition-all duration-500"
+                          style={{ width: `${match.awayWinPct}%` }}
+                        >
+                          {match.awayWinPct}%
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Legend */}
+                    <div className="flex justify-between text-xs text-text-muted">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-accent-green" />
+                        {translateTeam(match.team_home)}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-gray-500" />
+                        Empate
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-accent-gold" />
+                        {translateTeam(match.team_away)}
+                      </div>
+                    </div>
+
+                    {/* Average Score */}
+                    <div className="mt-3 pt-3 border-t border-border flex justify-center gap-6 text-sm">
+                      <span className="text-text-muted">Placar médio:</span>
+                      <span className="font-bold text-text-primary">{match.avgHome} - {match.avgAway}</span>
+                      <span className="text-text-muted">({match.totalPredictions} palpites)</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+
+            {stats.length === 0 && (
               <div className="glass-card p-12 text-center">
                 <div className="text-5xl mb-4">📈</div>
-                <p className="text-text-muted text-lg">Carregando estatísticas ou nenhum palpite registrado ainda.</p>
+                <p className="text-text-muted text-lg">Nenhum palpite neste grupo.</p>
               </div>
-            ) : (
-            <div className="space-y-8">
-              
-              {/* Podium */}
-              <div>
-                <h2 className="text-xl font-bold mb-4 text-center gradient-text">Mais Votados (Pódio)</h2>
-                <div className="flex flex-col md:flex-row gap-4 items-stretch justify-center">
-                  {renderPodiumPosition('2º Lugar', knockoutStats.runnerUp, 'text-gray-400', 'border-gray-400')}
-                  {renderPodiumPosition('Campeão', knockoutStats.champion, 'text-accent-gold-light', 'border-accent-gold')}
-                  {renderPodiumPosition('3º Lugar', knockoutStats.thirdPlace, 'text-amber-600', 'border-amber-600')}
-                </div>
-              </div>
-
-              {/* Advanced Teams List */}
-              <div>
-                <h2 className="text-xl font-bold mb-4 mt-8">Favoritos para as Oitavas (Passar de Fase)</h2>
-                {knockoutStats.advanced.length === 0 ? (
+            )}
+            
+            {/* Advanced Teams List for R32 */}
+            {selectedGroup === 'R32' && advancedStats && advancedStats.advanced && (
+              <div className="mt-12 animate-fade-in">
+                <h2 className="text-xl font-bold mb-4">Favoritos para as Oitavas (Passar de Fase)</h2>
+                {advancedStats.advanced.length === 0 ? (
                   <div className="glass-card p-8 text-center text-text-muted">Nenhum palpite registrado para a próxima fase ainda.</div>
                 ) : (
                   <div className="glass-card overflow-hidden">
@@ -189,10 +258,10 @@ export default function StatsPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border/30">
-                          {knockoutStats.advanced.flatMap(group => 
+                          {advancedStats.advanced.flatMap(group => 
                             group.teams.map(t => {
-                              const pct = knockoutStats.maxAdvancedVotes > 0 
-                                ? Math.round((group.votes / knockoutStats.maxAdvancedVotes) * 100) 
+                              const pct = advancedStats.maxAdvancedVotes > 0 
+                                ? Math.round((group.votes / advancedStats.maxAdvancedVotes) * 100) 
                                 : 0
 
                               return (
@@ -231,109 +300,8 @@ export default function StatsPage() {
                   </div>
                 )}
               </div>
-            </div>
-            )
-          ) : (
-            <div className="space-y-4">
-              {stats.map(match => (
-                <div key={match.id} className="glass-card p-5 md:p-6">
-                  {/* Match Header */}
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      {getFlagUrl(match.flag_home) ? (
-                        <img src={getFlagUrl(match.flag_home)} alt={translateTeam(match.team_home)} className="w-8 h-5 md:w-10 md:h-7 object-cover rounded shadow-sm flex-shrink-0" />
-                      ) : (
-                        <span className="text-2xl">{match.flag_home}</span>
-                      )}
-                      <span className="font-semibold text-text-primary truncate">{translateTeam(match.team_home)}</span>
-                    </div>
-
-                    <div className="flex flex-col items-center justify-center mx-2">
-                      <span className="px-3 py-1 text-xs font-bold text-text-muted bg-bg-primary rounded-lg mb-1">VS</span>
-                      {match.score_home !== null && match.score_away !== null && (
-                        <span className={`text-xs font-bold whitespace-nowrap ${match.liveData && !match.liveData.finished ? 'text-red-500 animate-pulse' : 'text-accent-green-light'}`}>
-                          {match.score_home} - {match.score_away} {match.liveData && !match.liveData.finished ? "(Ao Vivo)" : ""}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-3 flex-1 min-w-0 justify-end">
-                      <span className="font-semibold text-text-primary truncate">{translateTeam(match.team_away)}</span>
-                      {getFlagUrl(match.flag_away) ? (
-                        <img src={getFlagUrl(match.flag_away)} alt={translateTeam(match.team_away)} className="w-8 h-5 md:w-10 md:h-7 object-cover rounded shadow-sm flex-shrink-0" />
-                      ) : (
-                        <span className="text-2xl">{match.flag_away}</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {match.totalPredictions === 0 ? (
-                    <p className="text-center text-text-muted text-sm py-2">Nenhum palpite registrado ainda</p>
-                  ) : (
-                    <>
-                      {/* Odds Bar */}
-                      <div className="flex rounded-xl overflow-hidden h-10 mb-3 mt-4">
-                        {match.homeWinPct > 0 && (
-                          <div
-                            className="bg-gradient-to-r from-accent-green to-emerald-600 flex items-center justify-center text-xs font-bold text-white transition-all duration-500"
-                            style={{ width: `${match.homeWinPct}%` }}
-                          >
-                            {match.homeWinPct}%
-                          </div>
-                        )}
-                        {match.drawPct > 0 && (
-                          <div
-                            className="bg-gradient-to-r from-gray-500 to-gray-600 flex items-center justify-center text-xs font-bold text-white transition-all duration-500"
-                            style={{ width: `${match.drawPct}%` }}
-                          >
-                            {match.drawPct}%
-                          </div>
-                        )}
-                        {match.awayWinPct > 0 && (
-                          <div
-                            className="bg-gradient-to-r from-accent-gold to-amber-600 flex items-center justify-center text-xs font-bold text-white transition-all duration-500"
-                            style={{ width: `${match.awayWinPct}%` }}
-                          >
-                            {match.awayWinPct}%
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Legend */}
-                      <div className="flex justify-between text-xs text-text-muted">
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 rounded-full bg-accent-green" />
-                          {translateTeam(match.team_home)}
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 rounded-full bg-gray-500" />
-                          Empate
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 rounded-full bg-accent-gold" />
-                          {translateTeam(match.team_away)}
-                        </div>
-                      </div>
-
-                      {/* Average Score */}
-                      <div className="mt-3 pt-3 border-t border-border flex justify-center gap-6 text-sm">
-                        <span className="text-text-muted">Placar médio:</span>
-                        <span className="font-bold text-text-primary">{match.avgHome} × {match.avgAway}</span>
-                        <span className="text-text-muted">({match.totalPredictions} palpites)</span>
-                      </div>
-                    </>
-                  )}
-                </div>
-              ))}
-
-              {stats.length === 0 && (
-                <div className="glass-card p-12 text-center">
-                  <div className="text-5xl mb-4">📈</div>
-                  <p className="text-text-muted text-lg">Nenhum jogo neste grupo.</p>
-                </div>
-              )}
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
     </div>

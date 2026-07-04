@@ -8,11 +8,11 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
-  const { login, user } = useAuth()
+  const { login, user, loading: authLoading } = useAuth()
 
   // If already logged in, redirect
   useEffect(() => {
-    if (user) {
+    if (!authLoading && user) {
       navigate('/palpites', { replace: true })
     }
   }, [user, navigate])
@@ -34,6 +34,14 @@ export default function LoginPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg-primary">
+        <div className="w-10 h-10 border-4 border-accent-green border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
   }
 
   return (

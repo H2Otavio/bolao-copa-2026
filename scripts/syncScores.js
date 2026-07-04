@@ -199,8 +199,8 @@ async function syncScores() {
 
     const statsMap = {};
     
-    // Group Stage Stats
-    const CUP_GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
+    // Group and Knockout Match Stats
+    const CUP_GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'R32', 'R16', 'QF', 'SF', '3RD', 'FINAL'];
     CUP_GROUPS.forEach(group => {
       const groupMatches = allMatches.filter(m => m.cup_group === group);
       const matchIds = groupMatches.map(m => m.id);

@@ -1,5 +1,6 @@
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
+import ExtraPredictionsPopup from './ExtraPredictionsPopup'
 
 const navItems = [
   { to: '/palpites', label: 'Palpites', icon: '⚽' },
@@ -107,6 +108,9 @@ export default function Layout({ children }) {
           ))}
         </div>
       </nav>
+
+      {/* Popups Globais (Só mostra se estiver logado) */}
+      {user && <ExtraPredictionsPopup />}
     </div>
   )
 }

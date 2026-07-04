@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react'
 
-export default function GroupTabs({ groups, selected, onSelect, predCounts, matchesPerGroup, knockoutUnlocked, phaseUnlocked = {} }) {
+export default function GroupTabs({ groups, selected, onSelect, predCounts, matchesPerGroup, knockoutUnlocked, phaseUnlocked = {}, showTournamentTab = false }) {
   const scrollRef = useRef(null)
 
   // Auto-scroll to selected tab
@@ -14,8 +14,8 @@ export default function GroupTabs({ groups, selected, onSelect, predCounts, matc
   }, [selected])
 
   const groupStage = groups.filter(g => g.length === 1)
-  const knockoutStage = groups.filter(g => g.length > 1)
-  const isKnockoutPhase = selected.length > 1
+  const knockoutStage = groups.filter(g => g.length > 1 && g !== 'final_awards')
+  const isKnockoutPhase = selected.length > 1 && selected !== 'final_awards'
 
   const handlePhaseChange = (phase) => {
     if (phase === 'groups' && isKnockoutPhase) onSelect('A')
@@ -63,10 +63,20 @@ export default function GroupTabs({ groups, selected, onSelect, predCounts, matc
         >
           Mata-Mata {!knockoutUnlocked && '🔒'}
         </button>
+        {showTournamentTab && (
+          <button
+            onClick={() => onSelect('final_awards')}
+            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
+              selected === 'final_awards' ? 'bg-accent-green text-white shadow-md' : 'text-text-muted hover:text-text-primary'
+            }`}
+          >
+            Torneio
+          </button>
+        )}
       </div>
 
       {/* Nível 2: Sub-guias */}
-      {!(visibleGroups.length === 1 && visibleGroups[0] === 'Mata-Mata') && (
+      {selected !== 'final_awards' && !(visibleGroups.length === 1 && visibleGroups[0] === 'Mata-Mata') && (
         <div
           ref={scrollRef}
           className="flex gap-4 overflow-x-auto pt-3 pb-4 px-4 scrollbar-none -mx-4 md:mx-0 md:px-2"
