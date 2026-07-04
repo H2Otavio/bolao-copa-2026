@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { calcScore } from '../src/lib/scoring.js';
 import { generateKnockoutBracket, getGroupPlacements } from '../src/lib/simulator.js';
 import { translateTeam } from '../src/lib/countries.js';
+import { execSync } from 'child_process';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY;
@@ -83,6 +84,10 @@ async function syncScores() {
   }
 
   console.log(`Synchronization step complete. Updated ${updatedCount} matches from external API.`);
+
+  // --- ADVANCE KNOCKOUT MATCHES ---
+  console.log("Advancing knockout teams...");
+  execSync('node scripts/advance_knockout.cjs', { stdio: 'inherit' });
 
   // --- BEGIN STATS & RANKING CALCULATION ---
   console.log("Calculating rankings locally to include knockout team bonuses...");
