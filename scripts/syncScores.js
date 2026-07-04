@@ -253,7 +253,7 @@ async function syncScores() {
     const advancedVotes = {};
 
     const incrementVote = (map, teamId) => {
-      if (!teamId || teamId.length > 3) return; 
+      if (!teamId) return; 
       if (!map[teamId]) map[teamId] = { id: teamId, votes: 0, flag: flagMap[teamId] };
       map[teamId].votes++;
     };
