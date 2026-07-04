@@ -252,17 +252,17 @@ async function syncScores() {
     const thirdPlaceVotes = {};
     const advancedVotes = {};
 
-    extraPredictions.forEach(ep => {
-      if (ep.champion) incrementVote(championVotes, ep.champion);
-      if (ep.runner_up) incrementVote(runnerUpVotes, ep.runner_up);
-      if (ep.third_place) incrementVote(thirdPlaceVotes, ep.third_place);
-    });
-
     const incrementVote = (map, teamId) => {
       if (!teamId || teamId.length > 3) return; 
       if (!map[teamId]) map[teamId] = { id: teamId, votes: 0, flag: flagMap[teamId] };
       map[teamId].votes++;
     };
+
+    extraPredictions.forEach(ep => {
+      if (ep.champion) incrementVote(championVotes, ep.champion);
+      if (ep.runner_up) incrementVote(runnerUpVotes, ep.runner_up);
+      if (ep.third_place) incrementVote(thirdPlaceVotes, ep.third_place);
+    });
 
     const predsByUser = {};
     predictions.forEach(p => {
