@@ -239,10 +239,19 @@ async function syncScores() {
       if (m.team_away && m.flag_away) flagMap[m.team_away] = m.flag_away;
     });
 
+    const { data: extraPredictionsData } = await supabase.from('extra_predictions').select('*');
+    const extraPredictions = extraPredictionsData || [];
+
     const championVotes = {};
     const runnerUpVotes = {};
     const thirdPlaceVotes = {};
     const advancedVotes = {};
+
+    extraPredictions.forEach(ep => {
+      if (ep.champion) incrementVote(championVotes, ep.champion);
+      if (ep.runner_up) incrementVote(runnerUpVotes, ep.runner_up);
+      if (ep.third_place) incrementVote(thirdPlaceVotes, ep.third_place);
+    });
 
     const incrementVote = (map, teamId) => {
       if (!teamId || teamId.length > 3) return; 
@@ -267,27 +276,10 @@ async function syncScores() {
         }
       }
 
-      const m103 = bracket[103];
-      const p103 = userPreds.find(p => p.match_id === allMatches.find(m => m.match_number === 103)?.id);
-      if (m103 && p103 && p103.score_home !== null && p103.score_away !== null) {
-        let hTeam = m103.team_home, aTeam = m103.team_away;
-        if (p103.score_home > p103.score_away) incrementVote(thirdPlaceVotes, hTeam);
-        else if (p103.score_away > p103.score_home) incrementVote(thirdPlaceVotes, aTeam);
-        else {
-          if (p103.advance_on_penalties === hTeam) incrementVote(thirdPlaceVotes, hTeam);
-          else if (p103.advance_on_penalties === aTeam) incrementVote(thirdPlaceVotes, aTeam);
-        }
-      }
-
-      const m104 = bracket[104];
-      const p104 = userPreds.find(p => p.match_id === allMatches.find(m => m.match_number === 104)?.id);
-      if (m104 && p104 && p104.score_home !== null && p104.score_away !== null) {
-        let hTeam = m104.team_home, aTeam = m104.team_away;
-        if (p104.score_home > p104.score_away) { incrementVote(championVotes, hTeam); incrementVote(runnerUpVotes, aTeam); }
-        else if (p104.score_away > p104.score_home) { incrementVote(championVotes, aTeam); incrementVote(runnerUpVotes, hTeam); }
-        else {
-          if (p104.advance_on_penalties === hTeam) { incrementVote(championVotes, hTeam); incrementVote(runnerUpVotes, aTeam); }
-          else if (p104.advance_on_penalties === aTeam) { incrementVote(championVotes, aTeam); incrementVote(runnerUpVotes, hTeam); }
+      for (let i = 73; i <= 88; i++) {
+        if (bracket[i]) {
+          incrementVote(advancedVotes, bracket[i].team_home);
+          incrementVote(advancedVotes, bracket[i].team_away);
         }
       }
     });
@@ -313,9 +305,11 @@ async function syncScores() {
     });
 
     statsMap['Mata-Mata'] = {
-      champion: groupAndSort(championVotes)[0] || null,
-      runnerUp: groupAndSort(runnerUpVotes)[0] || null,
-      thirdPlace: groupAndSort(thirdPlaceVotes)[0] || null,
+      podium: {
+        champion: groupAndSort(championVotes)[0] || null,
+        runnerUp: groupAndSort(runnerUpVotes)[0] || null,
+        thirdPlace: groupAndSort(thirdPlaceVotes)[0] || null,
+      },
       advanced: advancedList,
       maxAdvancedVotes: advancedList.length > 0 ? advancedList[0].votes : 0,
       totalVoters: users.length
