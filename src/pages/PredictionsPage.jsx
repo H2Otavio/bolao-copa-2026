@@ -29,6 +29,7 @@ export default function PredictionsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState({})
   const [saveSuccess, setSaveSuccess] = useState({})
+  const [autoSelected, setAutoSelected] = useState(false)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -118,6 +119,22 @@ export default function PredictionsPage() {
       }, 100)
     }
   }, [allMatches, location.search])
+
+  // Auto-select tab on first load
+  useEffect(() => {
+    if (allMatches.length > 0 && !autoSelected) {
+      const params = new URLSearchParams(location.search)
+      if (!params.get('group') && params.get('tab') !== 'final_awards') {
+        const nextMatch = allMatches.find(m => m.score_home === null || m.score_away === null)
+        if (nextMatch && nextMatch.cup_group) {
+          setSelectedGroup(nextMatch.cup_group)
+        } else if (!nextMatch) {
+          setSelectedGroup('FINAL')
+        }
+      }
+      setAutoSelected(true)
+    }
+  }, [allMatches, autoSelected, location.search])
 
   const handleSavePrediction = async (matchId, payload) => {
     // Handling deletion if payload signals to delete
