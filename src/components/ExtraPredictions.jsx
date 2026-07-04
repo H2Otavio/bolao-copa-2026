@@ -102,7 +102,7 @@ export default function ExtraPredictions() {
       setTimeout(() => setSaved(false), 3000)
     } catch (error) {
       console.error('Error saving extra predictions:', error)
-      alert("Erro ao salvar! (O banco de dados precisa ter a tabela 'extra_predictions' criada no Supabase)")
+      alert(`Erro ao salvar! Detalhes: ${error.message || error.details || JSON.stringify(error)}`)
     } finally {
       setSaving(false)
     }
