@@ -91,9 +91,11 @@ export default function ExtraPredictions() {
       }
 
       if (existing) {
-        await supabase.from('extra_predictions').update(payload).eq('id', existing.id)
+        const { error } = await supabase.from('extra_predictions').update(payload).eq('id', existing.id)
+        if (error) throw error
       } else {
-        await supabase.from('extra_predictions').insert([payload])
+        const { error } = await supabase.from('extra_predictions').insert([payload])
+        if (error) throw error
       }
       
       setSaved(true)
