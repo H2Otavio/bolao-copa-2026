@@ -1,8 +1,12 @@
 const { createClient } = require('@supabase/supabase-js');
-const fs = require('fs');
-const env = fs.readFileSync('.env', 'utf-8');
-const supabaseUrl = env.match(/VITE_SUPABASE_URL=(.*)/)[1].trim();
-const supabaseKey = env.match(/VITE_SUPABASE_ANON_KEY=(.*)/)[1].trim();
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error("Missing environment variables. Make sure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set.");
+  process.exit(1);
+}
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const flagMap = {
@@ -17,7 +21,11 @@ const flagMap = {
 };
 
 async function run() {
-  const { data: matches } = await supabase.from('matches').select('*');
+  const { data: matches, error } = await supabase.from('matches').select('*');
+  if (error || !matches) {
+    console.error("Error fetching matches:", error);
+    return;
+  }
   
   const results = {};
   for (const m of matches) {
