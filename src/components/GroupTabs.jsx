@@ -48,7 +48,7 @@ export default function GroupTabs({ groups, selected, onSelect, predCounts, matc
         <button
           onClick={() => handlePhaseChange('groups')}
           className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
-            !isKnockoutPhase ? 'bg-accent-green text-white shadow-md' : 'text-text-muted hover:text-text-primary'
+            (!isKnockoutPhase && selected !== 'final_awards') ? 'bg-accent-green text-white shadow-md' : 'text-text-muted hover:text-text-primary'
           }`}
         >
           Fase de Grupos
