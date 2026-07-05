@@ -54,10 +54,8 @@ export function calcScore(prediction, match) {
     return { total: teamPoints, winnerPoints: 0, exactOnePoints: 0, exactBothPoints: 0, teamPoints, details: details.join(' | ') };
   }
 
-  // 2. Evaluate Score Points
-  // In knockout, score is only valid if they updated the score for the real match (!is_simulated)
-  // OR if they perfectly predicted both teams in the simulation.
-  const isScoreValid = !isKnockout || (!prediction.is_simulated || teamsMatchPerfectly)
+  // Score is always valid now that simulator is removed
+  const isScoreValid = true;
 
   let penaltyPoints = 0
   if (isScoreValid) {
