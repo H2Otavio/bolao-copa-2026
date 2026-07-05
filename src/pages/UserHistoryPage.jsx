@@ -147,7 +147,7 @@ export default function UserHistoryPage() {
                         {p.score_home !== null && p.score_away !== null ? (
                           <div className="text-text-secondary">
                             Palpite: <span className="font-semibold text-white">{p.score_home} x {p.score_away}</span>
-                            {p.advance_on_penalties && (
+                            {p.advance_on_penalties && p.score_home === p.score_away && (
                               <span className="ml-1 text-xs text-text-muted">
                                 ({translateTeam(p.advance_on_penalties)} nos pênaltis)
                               </span>
