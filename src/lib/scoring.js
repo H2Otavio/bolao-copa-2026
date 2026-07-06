@@ -87,10 +87,7 @@ export function calcScore(prediction, match) {
       exactOnePoints = 1
       details.push('Acertou gols de 1 time')
     }
-  } else if (isKnockout) {
-    details.push('Placar ignorado (times incorretos)')
   }
-
   const total = winnerPoints + exactOnePoints + exactBothPoints + teamPoints + penaltyPoints
 
   return {
