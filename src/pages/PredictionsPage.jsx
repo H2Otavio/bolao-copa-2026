@@ -5,7 +5,6 @@ import { supabase } from '../lib/supabase'
 import GroupTabs from '../components/GroupTabs'
 import MatchCard from '../components/MatchCard'
 import { useLiveScores } from '../lib/api'
-import { generateKnockoutBracket } from '../lib/simulator'
 import GroupStandingsTable from '../components/GroupStandingsTable'
 import ExtraPredictions from '../components/ExtraPredictions'
 import { parseMatchDate } from '../lib/dateUtils'
@@ -25,7 +24,7 @@ export default function PredictionsPage() {
 
   const [allMatches, setAllMatches] = useState([])
   const [allPredictionsMap, setAllPredictionsMap] = useState({})
-  const [simulatedBracket, setSimulatedBracket] = useState(null)
+  // simulatedBracket removed
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState({})
   const [saveSuccess, setSaveSuccess] = useState({})
@@ -87,21 +86,7 @@ export default function PredictionsPage() {
     fetchData()
   }, [fetchData])
 
-  // Run Simulator when predictions change
-  useEffect(() => {
-    if (knockoutUnlocked) {
-      try {
-        const bracket = generateKnockoutBracket(allMatches, Object.values(allPredictionsMap))
-        setSimulatedBracket(bracket)
-      } catch (err) {
-        console.error('Error generating knockout bracket:', err)
-        setSimulatedBracket(null)
-      }
-    } else {
-      setSimulatedBracket(null)
-    }
-  }, [knockoutUnlocked, allMatches, allPredictionsMap])
-
+  // Simulator logic removed
   // Filter matches for current view
   const displayMatches = allMatches.filter(m => m.cup_group === selectedGroup)
 
@@ -231,24 +216,7 @@ export default function PredictionsPage() {
       const isKnockout = m.cup_group && m.cup_group.length > 1
       const isRealMatchReady = isKnockout && !placeholderRegex.test(m.team_home || '') && !placeholderRegex.test(m.team_away || '')
       
-      let isPendingMismatch = false
-      if (p && p.is_simulated) {
-        if (isRealMatchReady) {
-          let hitCount = 0
-          if (m.team_home === p.simulated_team_home) hitCount++
-          if (m.team_away === p.simulated_team_away) hitCount++
-          if (hitCount < 2) isPendingMismatch = true
-        } else if (simulatedBracket) {
-          const sim = simulatedBracket[m.match_number]
-          if (sim && p.simulated_team_home && p.simulated_team_away) {
-            if (sim.team_home !== p.simulated_team_home || sim.team_away !== p.simulated_team_away) {
-              isPendingMismatch = true
-            }
-          }
-        }
-      }
-
-      const isFilled = p && p.score_home !== null && p.score_away !== null && !isPendingMismatch
+      const isFilled = p && p.score_home !== null && p.score_away !== null
       const hasStarted = m.match_date && parseMatchDate(m.match_date) < lockTime
       const hasResult = m.score_home !== null && m.score_away !== null
       
@@ -279,7 +247,7 @@ export default function PredictionsPage() {
       FINAL: knockoutUnlocked && hasAnyRealTeam('FINAL'),
     })
 
-  }, [allPredictionsMap, allMatches, knockoutUnlocked, simulatedBracket])
+  }, [allPredictionsMap, allMatches, knockoutUnlocked])
 
   return (
     <div className="animate-fade-in">
@@ -335,7 +303,7 @@ export default function PredictionsPage() {
                 saving={saving[match.id]}
                 saved={saveSuccess[match.id]}
                 liveData={live}
-                simulatedMatch={simulatedBracket ? simulatedBracket[match.match_number] : null}
+                simulatedMatch={null}
               />
             )
           })}

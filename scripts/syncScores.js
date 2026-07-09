@@ -1,7 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 import { calcScore } from '../src/lib/scoring.js';
-import { generateKnockoutBracket, getGroupPlacements } from '../src/lib/simulator.js';
-import { translateTeam } from '../src/lib/countries.js';
 import { execSync } from 'child_process';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
@@ -113,8 +111,6 @@ async function syncScores() {
 
   for (const user of users) {
     const userPreds = predictions.filter(p => p.user_id === user.id);
-    const bracket = generateKnockoutBracket(allMatches, userPreds);
-    
     let totalPoints = 0;
     let exactBothPoints = 0;
     let correctResults = 0;
@@ -135,11 +131,7 @@ async function syncScores() {
         };
       }
       
-      // Inject the dynamically calculated simulated teams so scoring.js can use them
-      if (isKnockout && bracket && bracket[match.match_number]) {
-        pred.simulated_team_home = bracket[match.match_number].team_home;
-        pred.simulated_team_away = bracket[match.match_number].team_away;
-      }
+      // Simulator logic removed
 
       const score = calcScore(pred, match);
       
