@@ -59,7 +59,7 @@ export default function RankingPage() {
           onChange={(e) => setSelectedLeague(e.target.value)}
           className="input-field w-full md:w-auto md:min-w-[200px] py-2 px-3 text-sm cursor-pointer"
         >
-          <option value={league.id}>{league.name}</option>
+          <option value={league.id}>{user?.name === 'Visitante (Demo)' ? 'Demonstração' : league.name}</option>
           {league.can_view_global_ranking && (
             <option value="all">🏆 Ranking Global</option>
           )}

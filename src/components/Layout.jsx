@@ -57,7 +57,7 @@ export default function Layout({ children }) {
                 <p className="text-sm font-medium text-text-primary group-hover:text-accent-green-light transition-colors flex items-center justify-end gap-1">
                   {user?.name} <span className="text-[10px]">▼</span>
                 </p>
-                <p className="text-xs text-text-muted">{league?.name}</p>
+                <p className="text-xs text-text-muted">{user?.name === 'Visitante (Demo)' ? 'Demonstração' : league?.name}</p>
               </div>
               
               {/* Dropdown Menu */}
