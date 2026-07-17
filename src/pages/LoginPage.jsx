@@ -36,6 +36,18 @@ export default function LoginPage() {
     }
   }
 
+  const handleGuestLogin = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      await login('visitante@bolao2026.com', 'visitante2026')
+    } catch (err) {
+      setError('Erro ao acessar conta de visitante.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-bg-primary">
@@ -97,6 +109,16 @@ export default function LoginPage() {
                   Entrando...
                 </span>
               ) : 'Acessar Bolão'}
+            </button>
+
+            <div className="relative flex items-center py-2">
+              <div className="flex-grow border-t border-border"></div>
+              <span className="flex-shrink-0 mx-4 text-text-muted text-sm">ou</span>
+              <div className="flex-grow border-t border-border"></div>
+            </div>
+
+            <button type="button" onClick={handleGuestLogin} disabled={loading} className="w-full mt-2 py-3 px-4 rounded-xl font-bold transition-all duration-300 bg-bg-secondary border border-border text-white hover:bg-border">
+              Acessar como Visitante
             </button>
           </form>
 
